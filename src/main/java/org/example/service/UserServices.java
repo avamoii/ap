@@ -3,48 +3,51 @@ package org.example.service;
 import java.util.*;
 import com.google.gson.Gson;
 import org.example.model.User;
+import org.example.DAO.UserDao;
 
 public class UserServices {
-    // In-memory user storage
-    private List<User> users = new ArrayList<>();
+    private UserDao userDao = UserDao.getInstance();
     private Gson gson = new Gson();
 
-    // Get all users
     public String getAllUsers() {
+        List<User> users = userDao.getAllUsers();
         return gson.toJson(users);
     }
 
-    // Get user by id
     public String getUserById(int id) {
-        if (id < 0 || id >= users.size()) {
+        User user = userDao.getUserById(id);
+        if (user == null) {
             return "User not found";
         }
-        return gson.toJson(users.get(id));
-    }
-
-    // Create user
-    public String createUser(String userJson) {
-        User user = gson.fromJson(userJson, User.class);
-        users.add(user);
         return gson.toJson(user);
     }
 
-    // Update user by id
-    public String updateUserById(int id, String userJson) {
-        if (id < 0 || id >= users.size()) {
-            return "User not found";
+    public String createUser(String userJson) {
+        User user = gson.fromJson(userJson, User.class);
+        boolean success = userDao.createUser(user);
+        if (success) {
+            return gson.toJson(user);
+        } else {
+            return "Failed to create user";
         }
-        User updatedUser = gson.fromJson(userJson, User.class);
-        users.set(id, updatedUser);
-        return gson.toJson(updatedUser);
     }
 
-    // Delete user by id
-    public String deleteUserById(int id) {
-        if (id < 0 || id >= users.size()) {
-            return "User not found";
+    public String updateUserById(int id, String userJson) {
+        User updatedUser = gson.fromJson(userJson, User.class);
+        boolean success = userDao.updateUser(id, updatedUser);
+        if (success) {
+            return gson.toJson(updatedUser);
+        } else {
+            return "User not found or update failed";
         }
-        users.remove(id);
-        return "User deleted";
+    }
+
+    public String deleteUserById(int id) {
+        boolean success = userDao.deleteUser(id);
+        if (success) {
+            return "User deleted";
+        } else {
+            return "User not found or delete failed";
+        }
     }
 }

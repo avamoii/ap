@@ -4,6 +4,7 @@ import static spark.Spark.*;
 import org.example.model.User;
 import java.util.*;
 import com.google.gson.Gson;
+import org.example.service.UserServices;
 
 public class Main {
     public static void main(String[] args) {
@@ -11,56 +12,58 @@ public class Main {
 
         get("/hello", (req, res) -> "helloooooooo");
 
-        // In-memory user storage
-        List<User> users = new ArrayList<>();
-        Gson gson = new Gson();
+        UserServices userServices = new UserServices();
 
         // Get all users
         get("/api/v1/users", (req, res) -> {
             res.type("application/json");
-            return gson.toJson(users);
+            return userServices.getAllUsers();
         });
 
         // Get user by id
         get("/api/v1/users/:id", (req, res) -> {
             int id = Integer.parseInt(req.params(":id"));
-            if (id < 0 || id >= users.size()) {
+            String result = userServices.getUserById(id);
+            if ("User not found".equals(result)) {
                 res.status(404);
-                return "User not found";
+            } else {
+                res.type("application/json");
             }
-            res.type("application/json");
-            return gson.toJson(users.get(id));
+            return result;
         });
 
         // Create user
         post("/api/v1/users", (req, res) -> {
-            User user = gson.fromJson(req.body(), User.class);
-            users.add(user);
-            res.status(201);
-            return gson.toJson(user);
+            String result = userServices.createUser(req.body());
+            if ("Failed to create user".equals(result)) {
+                res.status(400);
+            } else {
+                res.status(201);
+                res.type("application/json");
+            }
+            return result;
         });
 
         // Update user by id
         put("/api/v1/users/:id", (req, res) -> {
             int id = Integer.parseInt(req.params(":id"));
-            if (id < 0 || id >= users.size()) {
+            String result = userServices.updateUserById(id, req.body());
+            if ("User not found or update failed".equals(result)) {
                 res.status(404);
-                return "User not found";
+            } else {
+                res.type("application/json");
             }
-            User updatedUser = gson.fromJson(req.body(), User.class);
-            users.set(id, updatedUser);
-            return gson.toJson(updatedUser);
+            return result;
         });
 
         // Delete user by id
         delete("/api/v1/users/:id", (req, res) -> {
             int id = Integer.parseInt(req.params(":id"));
-            if (id < 0 || id >= users.size()) {
+            String result = userServices.deleteUserById(id);
+            if ("User not found or delete failed".equals(result)) {
                 res.status(404);
-                return "User not found";
             }
-            User removed = users.remove(id);
-            return gson.toJson(removed);
+            return result;
         });
     }
 }
