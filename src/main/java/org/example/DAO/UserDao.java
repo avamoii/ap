@@ -11,6 +11,7 @@ public class UserDao {
 
     private UserDao() {
         dbManager = DatabaseConnectionManager.getInstance();
+        createUsersTableIfNotExists();
     }
 
     public static UserDao getInstance() {
@@ -73,6 +74,7 @@ public class UserDao {
         }
         return false;
     }
+
     public boolean deleteUser(int id) {
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement("DELETE FROM users WHERE id = ?")) {
@@ -82,5 +84,19 @@ public class UserDao {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public void createUsersTableIfNotExists() {
+        String sql = "CREATE TABLE IF NOT EXISTS users (" +
+                "id SERIAL PRIMARY KEY," +
+                "name VARCHAR(255) NOT NULL," +
+                "email VARCHAR(255) NOT NULL UNIQUE" +
+                ")";
+        try (Connection conn = dbManager.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
