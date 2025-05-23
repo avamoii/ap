@@ -15,8 +15,9 @@
     </properties>
 
     <dependencies>
-     <!-- Apache Spark for Big Data -->
-        <!-- <dependency>
+        <!-- Apache Spark for Big Data -->
+        <!--
+        <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.12</artifactId>
             <version>3.5.1</version>
@@ -25,7 +26,8 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.12</artifactId>
             <version>3.5.1</version>
-        </dependency> -->
+        </dependency>
+        -->
 
         <!-- Spark Java Web Framework -->
         <dependency>
@@ -33,5 +35,13 @@
             <artifactId>spark-core</artifactId>
             <version>2.9.4</version>
         </dependency>
+
+        <!-- Gson for JSON serialization -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
     </dependencies>
 </project>
+
