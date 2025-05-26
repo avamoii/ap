@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+
+        <!-- Database connection settings -->
+        <property name="hibernate.connection.driver_class">org.h2.Driver</property>
+        <property name="hibernate.connection.url">jdbc:h2:~/foodappdb</property>
+        <property name="hibernate.connection.username">sa</property>
+        <property name="hibernate.connection.password"></property>
+
+        <!-- JDBC dialect -->
+        <property name="hibernate.dialect">org.hibernate.dialect.H2Dialect</property>
+
+        <!-- Show SQL in console -->
+        <property name="hibernate.show_sql">true</property>
+        <property name="hibernate.format_sql">true</property>
+
+        <!-- Automatically update schema -->
+        <property name="hibernate.hbm2ddl.auto">update</property>
+
+        <!-- List of annotated classes -->
+        <mapping class="org.example.model.User"/>
+        <mapping class="org.example.model.Customer"/>
+        <mapping class="org.example.model.Seller"/>
+        <mapping class="org.example.model.Restaurant"/>
+        <!-- بقیه Entity ها هم اضافه کن -->
+
+    </session-factory>
+</hibernate-configuration>
