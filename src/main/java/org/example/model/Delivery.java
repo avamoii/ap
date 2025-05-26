@@ -1,4 +1,13 @@
 package org.example.model;
 
-public class Delivery {
+
+import jakarta.persistence.Entity;
+
+@Entity
+public class Delivery extends User {
+    public Delivery() { super(); }
+
+    public Delivery(String name, String phone, String email, String address) {
+        super(name, phone, email, address);
+    }
 }
