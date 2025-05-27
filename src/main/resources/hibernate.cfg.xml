@@ -6,13 +6,13 @@
     <session-factory>
 
         <!-- Database connection settings -->
-        <property name="hibernate.connection.driver_class">org.h2.Driver</property>
-        <property name="hibernate.connection.url">jdbc:h2:~/foodappdb</property>
-        <property name="hibernate.connection.username">sa</property>
-        <property name="hibernate.connection.password"></property>
+        <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
+        <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/ap-database</property>
+        <property name="hibernate.connection.username">postgres</property>
+        <property name="hibernate.connection.password">password</property>
 
-        <!-- JDBC dialect -->
-        <property name="hibernate.dialect">org.hibernate.dialect.H2Dialect</property>
+        <!-- JDBC dialect for PostgreSQL -->
+        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
 
         <!-- Show SQL in console -->
         <property name="hibernate.show_sql">true</property>
@@ -26,7 +26,7 @@
         <mapping class="org.example.model.Customer"/>
         <mapping class="org.example.model.Seller"/>
         <mapping class="org.example.model.Restaurant"/>
-        <!-- بقیه Entity ها هم اضافه کن -->
+        <!-- Add remaining Entity mappings here -->
 
     </session-factory>
 </hibernate-configuration>

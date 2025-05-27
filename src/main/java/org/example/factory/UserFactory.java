@@ -3,7 +3,7 @@ package org.example.factory;
 
 import org.example.dto.RegisterRequest;
 import org.example.model.*;
-        import org.example.model.UserRole;
+        import org.example.enums.UserRole;
 
 public class UserFactory {
 
