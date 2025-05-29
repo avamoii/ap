@@ -23,9 +23,6 @@
 
         <!-- List of annotated classes -->
         <mapping class="org.example.model.User"/>
-        <mapping class="org.example.model.Customer"/>
-        <mapping class="org.example.model.Seller"/>
-        <mapping class="org.example.model.Restaurant"/>
         <!-- Add remaining Entity mappings here -->
 
     </session-factory>

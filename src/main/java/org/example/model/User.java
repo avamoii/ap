@@ -1,47 +1,91 @@
 package org.example.model;
+import org.example.enums.UserRole;
 import jakarta.persistence.*;
-@MappedSuperclass
+
+@Entity
+@Table(name = "users") // نام جدول در دیتابیس شما
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
     @Column(nullable = false)
-    private String name;
+    private String firstName;
+
+    @Column(nullable = false)
+    private String lastName;
 
     @Column(nullable = false, unique = true)
-    private String phone;
+    private String phoneNumber;
 
     @Column(nullable = false)
-    private String email;
+    private String Password;
 
-    @Column
-    private String address;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role;
 
-    // --- Constructors ---
-    public User() {}
+    private String address; // آدرس می‌تواند اختیاری باشد یا بر اساس نقش
 
-    public User(String name, String phone, String email, String address) {
-        this.name = name;
-        this.phone = phone;
-        this.email = email;
-        this.address = address;
+    // Constructors
+    public User() {
     }
 
-    // --- Getters and Setters ---
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    public String getFirstName() {
+        return firstName;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getPassword() {
+        return Password;
+    }
+
+    public void setPassword(String hashedPassword) {
+        this.Password = hashedPassword;
+    }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
 }
-
