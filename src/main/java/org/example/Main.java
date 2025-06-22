@@ -1,6 +1,8 @@
 package org.example;
 
 import static spark.Spark.*;
+
+import io.github.cdimascio.dotenv.Dotenv;
 import org.example.config.HibernateUtil;
 import java.util.logging.LogManager;
 import com.google.gson.Gson;
@@ -15,6 +17,10 @@ public class Main {
     public static void main(String[] args) {
         port(8080);
         LogManager.getLogManager().reset();
+        // Load .env and set as system properties
+        Dotenv dotenv = Dotenv.load();
+        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+
 
         try {
             HibernateUtil.getSessionFactory();//اماده سازی هایبرنیت برای استفاده

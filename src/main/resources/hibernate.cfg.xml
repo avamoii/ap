@@ -7,9 +7,9 @@
 
         <!-- Database connection settings -->
         <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
-        <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/ap-database</property>
-        <property name="hibernate.connection.username">postgres</property>
-        <property name="hibernate.connection.password">password</property>
+        <property name="hibernate.connection.url">jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}</property>
+        <property name="hibernate.connection.username">${DATABASE_USER}</property>
+        <property name="hibernate.connection.password">${DATABASE_PASSWORD}</property>
 
         <!-- JDBC dialect for PostgreSQL -->
         <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
