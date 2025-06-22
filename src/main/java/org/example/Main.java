@@ -1,7 +1,8 @@
 package org.example;
-
+import org.example.exception.InvalidInputException;
+import org.example.exception.ResourceConflictException;
+import org.example.exception.UnauthorizedException;
 import static spark.Spark.*;
-
 import io.github.cdimascio.dotenv.Dotenv;
 import org.example.actions.auth.RegisterUserAction;
 import org.example.config.HibernateUtil;
@@ -34,52 +35,66 @@ public class Main {
 // ================================================================================================================================
         // --- JWT Authentication Filter ---
         before((request, response) -> {
-            String path = request.pathInfo();//مسیر درخواست فعلی رو میگیره
-            // مسیرهایی که نیاز به توکن ندارند (مثل /auth/register, /auth/login) را مستثنی کنید
+            String path = request.pathInfo();
             if (path.equals("/auth/register") || path.equals("/auth/login")) {
-                return; // نیازی به بررسی توکن نیست
+                return;
             }
 
-
-            // مثال: تمام مسیرهای تحت /api/* یا مسیر خاص /auth/profile نیاز به توکن دارند
             if (path.startsWith("/api/") || path.equals("/auth/profile")) {
                 String authHeader = request.headers("Authorization");
+
+                // ۱. اگر هدر وجود نداشت، مستقیماً Exception پرتاب کن
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                    response.type("application/json");
-                    halt(401, gson.toJson(Map.of("error", "Unauthorized: Missing or invalid Authorization header")));
-                    return; // توقف اجرای فیلتر و درخواست
+                    throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
                 }
 
-                String token = authHeader.substring(7); // حذف "Bearer "
-                Claims claims; // تعریف متغیر Claims
+                String token = authHeader.substring(7);
 
-                try {
-                    // فراخوانی متد verifyToken از JwtUtil شما
-                    claims = JwtUtil.verifyToken(token);
+                // ۲. اینجا دیگر نیازی به try-catch نیست!
+                // متد verifyToken را فراخوانی کن. اگر توکن نامعتبر باشد، خودش
+                // UnauthorizedException پرتاب می‌کند و هندلر سراسری ما در Main.java آن را می‌گیرد.
+                Claims claims = JwtUtil.verifyToken(token);
 
-                } catch (RuntimeException e) { // یا JwtException اگر JwtUtil آن را مستقیم پرتاب می‌کند و شما آن را catch می‌کنید
-                    // اگر verifyToken در JwtUtil شما در صورت خطا Exception پرتاب می‌کند
-                    response.type("application/json");
-                    System.err.println("JWT Verification failed in filter: " + e.getMessage()); // لاگ کردن خطا برای دیباگ
-                    // پیام خطا از خود Exception گرفته می‌شود
-                    halt(401, gson.toJson(Map.of("error", "Unauthorized: " + e.getMessage())));
-                    return; // توقف اجرای فیلتر و درخواست
-                }
-
-                // اگر به اینجا رسیدیم یعنی توکن معتبر بوده و claims مقداردهی شده است.
-                // حالا userId و userRole را از claims استخراج می‌کنیم.
-                // فرض می‌کنیم subject در توکن همان userId است و role یک claim جداگانه است.
-                // این بخش را با توجه به نحوه تولید توکن در JwtUtil.generateToken خودتان تنظیم کنید.
+                // اگر کد به اینجا برسد، یعنی توکن معتبر بوده است.
                 request.attribute("userId", Long.parseLong(claims.getSubject()));
                 request.attribute("userRole", claims.get("role", String.class));
-
-                System.out.println("Token validated for user: " + request.attribute("userId") + ", Role: " + request.attribute("userRole"));
             }
         });
-//================================================================================================================================
-//================================================================================================================================
+
+        // ================== HANDLER های سراسری برای EXCEPTION ها ==================
+
+        // این هندلر زمانی اجرا می‌شود که یک InvalidInputException پرتاب شود
+        exception(InvalidInputException.class, (e, request, response) -> {
+            response.status(400); // Bad Request
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        // این هندلر برای خطای Unauthorized اجرا می‌شود
+        exception(UnauthorizedException.class, (e, request, response) -> {
+            response.status(401); // Unauthorized
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        // این هندلر برای خطای ResourceConflictException اجرا می‌شود
+        exception(ResourceConflictException.class, (e, request, response) -> {
+            response.status(409); // Conflict
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        // این هندلر به عنوان آخرین راه حل، برای تمام خطاهای پیش‌بینی نشده دیگر اجرا می‌شود
+        exception(Exception.class, (e, request, response) -> {
+            e.printStackTrace(); // برای دیباگ
+            response.status(500); // Internal Server Error
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
 
 
+
+        // ================================================================================================================================
         post("/auth/register", new RegisterUserAction(gson));
         get("/auth/profile", (request, response) -> { // این مسیر حالا توسط فیلتر محافظت می‌شود
             response.type("application/json");
