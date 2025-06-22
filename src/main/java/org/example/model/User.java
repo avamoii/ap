@@ -27,6 +27,15 @@ public class User {
     private UserRole role;
 
     private String address; // آدرس می‌تواند اختیاری باشد یا بر اساس نقش
+    @Column(name = "email", unique = true) // ایمیل معمولا باید یکتا باشد
+    private String email;
+
+    @Lob // این Annotation برای ذخیره رشته‌های طولانی مانند Base64 مناسب است
+    @Column(name = "profile_image_base64")
+    private String profileImageBase64;
+
+    @Embedded // <-- به هایبرنیت می‌گوید که آبجکت BankInfo را اینجا جاسازی کن
+    private BankInfo bankInfo;
 
     // Constructors
     public User() {
@@ -88,4 +97,11 @@ public class User {
     public void setAddress(String address) {
         this.address = address;
     }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getProfileImageBase64() { return profileImageBase64; }
+    public void setProfileImageBase64(String profileImageBase64) { this.profileImageBase64 = profileImageBase64; }
+    public BankInfo getBankInfo() { return bankInfo; }
+    public void setBankInfo(BankInfo bankInfo) { this.bankInfo = bankInfo; }
+
 }

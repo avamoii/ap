@@ -11,6 +11,10 @@ import com.google.gson.Gson;
 import io.jsonwebtoken.Claims;
 import org.example.util.JwtUtil;
 import java.util.Map;
+import org.example.repository.UserRepository;
+import org.example.repository.UserRepositoryImpl;
+import com.google.gson.GsonBuilder;
+import com.google.gson.FieldNamingPolicy;// <-- این را هم ایمپورت کنید
 
 public class Main {
     public static void main(String[] args) {
@@ -29,7 +33,9 @@ public class Main {
             throw new ExceptionInInitializerError(ex);
         }
 
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder()
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                .create();
 
 //================================================================================================================================
 // ================================================================================================================================
@@ -60,7 +66,8 @@ public class Main {
                 request.attribute("userRole", claims.get("role", String.class));
             }
         });
-
+// ================================================================================================================================
+        UserRepository userRepository = new UserRepositoryImpl();
         // ================== HANDLER های سراسری برای EXCEPTION ها ==================
 
         // این هندلر زمانی اجرا می‌شود که یک InvalidInputException پرتاب شود
@@ -95,7 +102,7 @@ public class Main {
 
 
         // ================================================================================================================================
-        post("/auth/register", new RegisterUserAction(gson));
+        post("/auth/register", new RegisterUserAction(gson, userRepository)); // این اکشن حالا از ریپازیتوری استفاده می‌کند
         get("/auth/profile", (request, response) -> { // این مسیر حالا توسط فیلتر محافظت می‌شود
             response.type("application/json");
             Long userId = request.attribute("userId");
