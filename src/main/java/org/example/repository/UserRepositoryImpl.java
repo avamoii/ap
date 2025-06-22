@@ -27,6 +27,21 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByEmail(String email) {
+        // منطق پیدا کردن کاربر بر اساس ایمیل
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<User> query = session.createQuery("FROM User WHERE email = :email", User.class);
+            query.setParameter("email", email);
+            // .uniqueResultOptional() به صورت خودکار یک Optional برمی‌گرداند
+            return query.uniqueResultOptional();
+        } catch (Exception e) {
+            e.printStackTrace();
+            // در صورت بروز خطا، یک Optional خالی برمی‌گردانیم
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public User save(User user) {
         // تمام منطق ذخیره کردن کاربر به اینجا منتقل می‌شود
         Transaction transaction = null;

@@ -43,6 +43,12 @@ public class RegisterUserAction implements Route {
             throw new ResourceConflictException("Phone number already exists");
         }
 
+        // 409 - اعتبارسنجی برای ایمیل
+        Optional<User> existingEmailUser = userRepository.findByEmail(registerRequest.getEmail());
+        if (existingEmailUser.isPresent()) {
+            throw new ResourceConflictException("Email already exists");
+        }
+
         // ساختن کاربر جدید
         User newUser = new User();
 
