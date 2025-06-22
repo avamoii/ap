@@ -32,13 +32,13 @@ public class RegisterUserAction implements Route {
         RegisterRequest registerRequest = gson.fromJson(request.body(), RegisterRequest.class);
 
         // 400 - اعتبارسنجی برای فیلد جدید
-        if (registerRequest.getFullName() == null || registerRequest.getPhoneNumber() == null || // <--- تغییر
+        if (registerRequest.getFullName() == null || registerRequest.getPhone() == null || // <--- تغییر
                 registerRequest.getPassword() == null || registerRequest.getRole() == null) {
             throw new InvalidInputException("Missing required fields");
         }
 
         // 409
-        Optional<User> existingUser = userRepository.findByPhoneNumber(registerRequest.getPhoneNumber());
+        Optional<User> existingUser = userRepository.findByPhoneNumber(registerRequest.getPhone());
         if (existingUser.isPresent()) {
             throw new ResourceConflictException("Phone number already exists");
         }
@@ -55,7 +55,7 @@ public class RegisterUserAction implements Route {
         newUser.setFirstName(firstName);
         newUser.setLastName(lastName);
 
-        newUser.setPhoneNumber(registerRequest.getPhoneNumber());
+        newUser.setPhoneNumber(registerRequest.getPhone());
         newUser.setRole(registerRequest.getRole());
         newUser.setAddress(registerRequest.getAddress());
         newUser.setPassword(registerRequest.getPassword());

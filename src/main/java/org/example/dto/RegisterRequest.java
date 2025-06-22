@@ -4,7 +4,7 @@ import org.example.enums.UserRole;
 
 public class RegisterRequest {
     private String fullName;      // <--- تغییر: جایگزین firstName و lastName
-    private String phoneNumber;
+    private String phone;
     private String password;
     private UserRole role;
     private String address;
@@ -16,8 +16,8 @@ public class RegisterRequest {
     public String getFullName() { return fullName; } // <--- تغییر
     public void setFullName(String fullName) { this.fullName = fullName; } // <--- تغییر
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
