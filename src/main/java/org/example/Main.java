@@ -3,13 +3,11 @@ package org.example;
 import static spark.Spark.*;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import org.example.actions.auth.RegisterUserAction;
 import org.example.config.HibernateUtil;
 import java.util.logging.LogManager;
 import com.google.gson.Gson;
 import io.jsonwebtoken.Claims;
-import org.example.controller.AuthenticationController;
-import org.example.DAO.UserDao;
-import org.example.service.UserService;
 import org.example.util.JwtUtil;
 import java.util.Map;
 
@@ -31,9 +29,6 @@ public class Main {
         }
 
         Gson gson = new Gson();
-        UserDao userDao = new UserDao();
-        UserService userService = new UserService(userDao);
-        AuthenticationController authController = new AuthenticationController(userService, gson);
 
 //================================================================================================================================
 // ================================================================================================================================
@@ -85,10 +80,7 @@ public class Main {
 //================================================================================================================================
 
 
-        // Auth endpoints
-        post("/auth/register", authController::handleRegistration);
-        // post("/auth/login", authController::handleLogin); // TODO: Implement and uncomment
-
+        post("/auth/register", new RegisterUserAction(gson));
         get("/auth/profile", (request, response) -> { // این مسیر حالا توسط فیلتر محافظت می‌شود
             response.type("application/json");
             Long userId = request.attribute("userId");
