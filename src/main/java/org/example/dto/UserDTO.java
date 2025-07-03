@@ -8,12 +8,11 @@ public class UserDTO {
     private String phoneNumber;
     private UserRole role;
     private String address;
-    // می‌توانید فیلدهای email, bankInfo و ... را هم اینجا اضافه کنید اگر می‌خواهید در پاسخ برگردانده شوند
 
-    // ===> Constructor را به این شکل اصلاح کنید <===
+    // ===> CONSTRUCTOR صحیح و اصلاح شده <===
     public UserDTO(Long id, String firstName, String lastName, String phoneNumber, UserRole role, String address) {
         this.id = id;
-        this.fullName = (firstName + " " + lastName).trim(); // نام و نام خانوادگی را به هم می‌چسباند
+        this.fullName = (firstName + " " + lastName).trim(); // نام و نام خانوادگی را به درستی ترکیب می‌کند
         this.phoneNumber = phoneNumber;
         this.role = role;
         this.address = address;
