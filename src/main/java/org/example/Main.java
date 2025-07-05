@@ -8,6 +8,7 @@ import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
 import org.example.actions.restaurant.CreateRestaurantAction;
 import org.example.actions.restaurant.GetMyRestaurantsAction;
+import org.example.actions.restaurant.UpdateRestaurantAction;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.RestaurantRepository;
@@ -90,5 +91,6 @@ public class Main {
         // --- Restaurant Endpoints ---
         post("/restaurants", new CreateRestaurantAction(gson, userRepository, restaurantRepository));
         get("/restaurants/mine", new GetMyRestaurantsAction(gson, restaurantRepository));
+        put("/restaurants/:id", new UpdateRestaurantAction(gson, restaurantRepository));
     }
 }
