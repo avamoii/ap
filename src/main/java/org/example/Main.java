@@ -6,11 +6,12 @@ import com.google.gson.GsonBuilder;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
-import org.example.actions.restaurant.CreateRestaurantAction; // 1. ایمپورت کردن اکشن جدید
+import org.example.actions.restaurant.CreateRestaurantAction;
+import org.example.actions.restaurant.GetMyRestaurantsAction;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
-import org.example.repository.RestaurantRepository;         // 1. ایمپورت کردن ریپازیتوری جدید
-import org.example.repository.RestaurantRepositoryImpl;      // 1. ایمپورت کردن ریپازیتوری جدید
+import org.example.repository.RestaurantRepository;
+import org.example.repository.RestaurantRepositoryImpl;
 import org.example.repository.UserRepository;
 import org.example.repository.UserRepositoryImpl;
 import org.example.util.JwtUtil;
@@ -45,7 +46,6 @@ public class Main {
 
         // --- Global Filters ---
         before((request, response) -> {
-            // ... (فیلتر Content-Type بدون تغییر)
 
             // --- JWT Authentication Filter ---
             String path = request.pathInfo();
@@ -86,21 +86,9 @@ public class Main {
         put("/auth/profile", new UpdateUserProfileAction(gson, userRepository));
         post("/auth/logout", new LogoutUserAction(gson));
 
-        // --- DEBUGGING ENDPOINT ---
-        get("/auth/debug-token", (request, response) -> {
-            response.type("application/json");
-            Long userIdFromToken = request.attribute("userId");
-            String userRoleFromToken = request.attribute("userRole");
-            return gson.toJson(Map.of(
-                    "message", "Data extracted from your token",
-                    "userId", userIdFromToken,
-                    "userRole", userRoleFromToken
-            ));
-        });
 
         // --- Restaurant Endpoints ---
         post("/restaurants", new CreateRestaurantAction(gson, userRepository, restaurantRepository));
-
-        // ...
+        get("/restaurants/mine", new GetMyRestaurantsAction(gson, restaurantRepository));
     }
 }
