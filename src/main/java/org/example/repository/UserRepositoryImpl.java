@@ -5,78 +5,76 @@ import org.example.model.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
+/**
+ * Implementation of UserRepository using Hibernate.
+ * This class contains all the database interaction logic.
+ */
 public class UserRepositoryImpl implements UserRepository {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserRepositoryImpl.class);
 
     @Override
     public Optional<User> findByPhoneNumber(String phoneNumber) {
-        // Logging to see what's happening
-        System.out.println("--- findByPhoneNumber ---");
-        System.out.println("Attempting to find user with phone: '" + phoneNumber + "'");
-
+        logger.debug("Attempting to find user by phone: '{}'", phoneNumber);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<User> query = session.createQuery("FROM User WHERE phoneNumber = :p_number", User.class);
             query.setParameter("p_number", phoneNumber);
-
-            Optional<User> userOptional = query.uniqueResultOptional();
-
-            // More logging to confirm the result
-            if (userOptional.isPresent()) {
-                System.out.println("SUCCESS: User found with ID: " + userOptional.get().getId());
-            } else {
-                System.out.println("FAILURE: User with phone '" + phoneNumber + "' was NOT found in the database.");
-            }
-
-            return userOptional;
+            return query.uniqueResultOptional();
         } catch (Exception e) {
-            System.err.println("CRITICAL ERROR in findByPhoneNumber: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("CRITICAL ERROR in findByPhoneNumber for phone '{}'", phoneNumber, e);
             return Optional.empty();
         }
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
+        logger.debug("Attempting to find user by email: '{}'", email);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<User> query = session.createQuery("FROM User WHERE email = :email_addr", User.class);
             query.setParameter("email_addr", email);
             return query.uniqueResultOptional();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("CRITICAL ERROR in findByEmail for email '{}'", email, e);
             return Optional.empty();
         }
     }
 
     @Override
     public User save(User user) {
-        System.out.println("--- save ---");
-        System.out.println("Attempting to save user with phone: '" + user.getPhoneNumber() + "'");
+        logger.debug("Attempting to save user with phone: '{}'", user.getPhoneNumber());
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-
             session.persist(user);
-
-            // Explicitly flush the session to force synchronization with the database
-            System.out.println("Flushing session...");
             session.flush();
-
-            // Commit the transaction
-            System.out.println("Committing transaction...");
             transaction.commit();
-
-            System.out.println("SUCCESS: User saved with ID: " + user.getId());
+            logger.info("SUCCESS: User saved with ID: {}", user.getId());
             return user;
         } catch (Exception e) {
             if (transaction != null) {
-                System.err.println("Transaction is not null, rolling back...");
                 transaction.rollback();
             }
-            System.err.println("CRITICAL ERROR in save: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("CRITICAL ERROR in save method", e);
             throw new RuntimeException("Could not save user", e);
+        }
+    }
+
+    @Override
+    public Optional<User> findById(Long id) {
+        logger.debug("Attempting to find user by ID: {}", id);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // session.get() is the most efficient Hibernate method to fetch by Primary Key.
+            // It does not use HQL and directly generates the optimal SQL.
+            User user = session.get(User.class, id);
+            return Optional.ofNullable(user);
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findById for ID '{}'", id, e);
+            return Optional.empty();
         }
     }
 }

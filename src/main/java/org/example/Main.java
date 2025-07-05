@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
+import org.example.actions.auth.GetUserProfileAction;
 import org.example.actions.auth.LoginUserAction;
 import org.example.actions.auth.RegisterUserAction;
 import org.example.config.HibernateUtil;
@@ -147,12 +148,7 @@ public class Main {
         post("/auth/register", new RegisterUserAction(gson, userRepository));
         post("/auth/login", new LoginUserAction(gson, userRepository));
 
-        get("/auth/profile", (request, response) -> { // This route is now protected by the JWT filter
-            response.type("application/json");
-            Long userId = request.attribute("userId");
-            // TODO: Implement logic to fetch user profile from the repository using userId
-            return gson.toJson(Map.of("message", "Profile for user ID: " + userId + " (Role: " + request.attribute("userRole") + ")"));
-        });
+        get("/auth/profile", new GetUserProfileAction(gson, userRepository));
         put("/auth/profile", (request, response) -> "TODO: Update Profile to be implemented.");
         post("/auth/logout", (request, response) -> "TODO: Logout to be implemented.");
 
