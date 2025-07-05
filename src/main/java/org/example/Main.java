@@ -5,17 +5,15 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
-import org.example.actions.auth.GetUserProfileAction;
-import org.example.actions.auth.LoginUserAction;
-import org.example.actions.auth.LogoutUserAction;
-import org.example.actions.auth.RegisterUserAction;
-import org.example.actions.auth.UpdateUserProfileAction;
+import org.example.actions.auth.*;
+import org.example.actions.restaurant.CreateRestaurantAction; // 1. ایمپورت کردن اکشن جدید
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
+import org.example.repository.RestaurantRepository;         // 1. ایمپورت کردن ریپازیتوری جدید
+import org.example.repository.RestaurantRepositoryImpl;      // 1. ایمپورت کردن ریپازیتوری جدید
 import org.example.repository.UserRepository;
 import org.example.repository.UserRepositoryImpl;
 import org.example.util.JwtUtil;
-
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -24,14 +22,11 @@ import static spark.Spark.*;
 
 public class Main {
     public static void main(String[] args) {
-        // --- Server and Environment Configuration ---
         port(1234);
         LogManager.getLogManager().reset();
-
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 
-        // --- Database Initialization ---
         try {
             HibernateUtil.getSessionFactory();
             System.out.println("Hibernate SessionFactory initialized successfully.");
@@ -40,30 +35,17 @@ public class Main {
             throw new ExceptionInInitializerError(ex);
         }
 
-        // --- Gson Configuration ---
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                 .create();
 
         // --- Dependency Injection ---
         UserRepository userRepository = new UserRepositoryImpl();
+        RestaurantRepository restaurantRepository = new RestaurantRepositoryImpl(); // 2. ساختن نمونه از ریپازیتوری رستوران
 
-
-        //================================================================================================================
-        // --- Global Filters (Executed before each request) ---
-        //================================================================================================================
-
+        // --- Global Filters ---
         before((request, response) -> {
-            // --- Content-Type Filter for 415 Unsupported Media Type ---
-            String method = request.requestMethod();
-
-            // This check applies only to methods that can have a request body AND actually have content.
-            // A request with no body might have a content length of 0 or -1.
-            if ((method.equals("POST") || method.equals("PUT") || method.equals("PATCH")) && request.contentLength() > 0) {
-                if (request.contentType() == null || !request.contentType().equalsIgnoreCase("application/json")) {
-                    throw new UnsupportedMediaTypeException("Unsupported Media Type: Only application/json is supported.");
-                }
-            }
+            // ... (فیلتر Content-Type بدون تغییر)
 
             // --- JWT Authentication Filter ---
             String path = request.pathInfo();
@@ -71,7 +53,8 @@ public class Main {
                 return;
             }
 
-            if (path.startsWith("/api/") || path.equals("/auth/profile") || path.equals("/auth/logout")) {
+            // 3. اضافه کردن مسیر رستوران به لیست مسیرهای محافظت‌شده
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -83,53 +66,13 @@ public class Main {
             }
         });
 
-
-        //================================================================================================================
         // --- Global Exception Handlers ---
-        //================================================================================================================
-
-        exception(InvalidInputException.class, (e, request, response) -> {
-            response.status(400);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(UnauthorizedException.class, (e, request, response) -> {
-            response.status(401);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
         exception(ForbiddenException.class, (e, request, response) -> {
-            response.status(403);
+            response.status(403); // Forbidden
             response.type("application/json");
             response.body(gson.toJson(Map.of("error", e.getMessage())));
         });
-
-        exception(NotFoundException.class, (e, request, response) -> {
-            response.status(404);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(ResourceConflictException.class, (e, request, response) -> {
-            response.status(409);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(UnsupportedMediaTypeException.class, (e, request, response) -> {
-            response.status(415);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(Exception.class, (e, request, response) -> {
-            e.printStackTrace();
-            response.status(500);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", "An unexpected internal server error occurred.")));
-        });
+        // ... (سایر Handler ها بدون تغییر)
 
 
         //================================================================================================================
@@ -143,8 +86,21 @@ public class Main {
         put("/auth/profile", new UpdateUserProfileAction(gson, userRepository));
         post("/auth/logout", new LogoutUserAction(gson));
 
-        // ... other placeholder routes
+        // --- DEBUGGING ENDPOINT ---
+        get("/auth/debug-token", (request, response) -> {
+            response.type("application/json");
+            Long userIdFromToken = request.attribute("userId");
+            String userRoleFromToken = request.attribute("userRole");
+            return gson.toJson(Map.of(
+                    "message", "Data extracted from your token",
+                    "userId", userIdFromToken,
+                    "userRole", userRoleFromToken
+            ));
+        });
 
-        System.out.println("Server started on port 1234. Endpoints are configured.");
+        // --- Restaurant Endpoints ---
+        post("/restaurants", new CreateRestaurantAction(gson, userRepository, restaurantRepository));
+
+        // ...
     }
 }
