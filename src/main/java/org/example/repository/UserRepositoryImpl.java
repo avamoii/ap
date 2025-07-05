@@ -77,4 +77,23 @@ public class UserRepositoryImpl implements UserRepository {
             return Optional.empty();
         }
     }
+    @Override
+    public User update(User user) {
+        logger.debug("Attempting to update user with ID: {}", user.getId());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            // session.merge() بهترین راه برای به‌روزرسانی یک موجودیت است
+            User updatedUser = session.merge(user);
+            transaction.commit();
+            logger.info("SUCCESS: User with ID {} updated.", updatedUser.getId());
+            return updatedUser;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("CRITICAL ERROR in update method for user ID {}", user.getId(), e);
+            throw new RuntimeException("Could not update user", e);
+        }
+    }
 }

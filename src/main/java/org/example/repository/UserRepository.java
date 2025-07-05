@@ -36,4 +36,5 @@ public interface UserRepository {
      * @return An Optional containing the user if found, or an empty Optional otherwise.
      */
     Optional<User> findById(Long id);
+    User update(User user);
 }

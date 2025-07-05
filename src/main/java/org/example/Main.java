@@ -8,6 +8,7 @@ import io.jsonwebtoken.Claims;
 import org.example.actions.auth.GetUserProfileAction;
 import org.example.actions.auth.LoginUserAction;
 import org.example.actions.auth.RegisterUserAction;
+import org.example.actions.auth.UpdateUserProfileAction;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.UserRepository;
@@ -149,7 +150,7 @@ public class Main {
         post("/auth/login", new LoginUserAction(gson, userRepository));
 
         get("/auth/profile", new GetUserProfileAction(gson, userRepository));
-        put("/auth/profile", (request, response) -> "TODO: Update Profile to be implemented.");
+        put("/auth/profile", new UpdateUserProfileAction(gson, userRepository));
         post("/auth/logout", (request, response) -> "TODO: Logout to be implemented.");
 
 
