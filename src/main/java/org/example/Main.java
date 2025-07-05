@@ -16,6 +16,7 @@ import org.example.repository.UserRepository;
 import org.example.repository.UserRepositoryImpl;
 import org.example.util.JwtUtil;
 
+
 import java.util.Map;
 import java.util.logging.LogManager;
 
@@ -95,6 +96,12 @@ public class Main {
 
         exception(UnauthorizedException.class, (e, request, response) -> {
             response.status(401);
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        exception(ForbiddenException.class, (e, request, response) -> {
+            response.status(403);
             response.type("application/json");
             response.body(gson.toJson(Map.of("error", e.getMessage())));
         });

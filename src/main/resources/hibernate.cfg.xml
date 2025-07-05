@@ -24,6 +24,7 @@
         <!-- List of annotated classes -->
         <mapping class="org.example.model.User"/>
         <!-- Add remaining Entity mappings here -->
+        <mapping class="org.example.model.Restaurant"/>
 
     </session-factory>
 </hibernate-configuration>

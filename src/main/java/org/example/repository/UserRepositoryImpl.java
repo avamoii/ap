@@ -51,12 +51,20 @@ public class UserRepositoryImpl implements UserRepository {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.persist(user);
+
+            // Explicitly flush the session to force synchronization with the database
+            logger.debug("Flushing session...");
             session.flush();
+
+            // Commit the transaction
+            logger.debug("Committing transaction...");
             transaction.commit();
+
             logger.info("SUCCESS: User saved with ID: {}", user.getId());
             return user;
         } catch (Exception e) {
             if (transaction != null) {
+                logger.error("Transaction is not null, rolling back...");
                 transaction.rollback();
             }
             logger.error("CRITICAL ERROR in save method", e);
@@ -68,23 +76,27 @@ public class UserRepositoryImpl implements UserRepository {
     public Optional<User> findById(Long id) {
         logger.debug("Attempting to find user by ID: {}", id);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // session.get() is the most efficient Hibernate method to fetch by Primary Key.
-            // It does not use HQL and directly generates the optimal SQL.
             User user = session.get(User.class, id);
+            if (user != null) {
+                logger.info("SUCCESS: User found with ID: {}", id);
+            } else {
+                logger.warn("FAILURE: User with ID '{}' was NOT found.", id);
+            }
             return Optional.ofNullable(user);
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findById for ID '{}'", id, e);
             return Optional.empty();
         }
     }
+
     @Override
     public User update(User user) {
         logger.debug("Attempting to update user with ID: {}", user.getId());
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-            // session.merge() بهترین راه برای به‌روزرسانی یک موجودیت است
             User updatedUser = session.merge(user);
+            session.flush();
             transaction.commit();
             logger.info("SUCCESS: User with ID {} updated.", updatedUser.getId());
             return updatedUser;
