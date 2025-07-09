@@ -25,6 +25,7 @@
         <mapping class="org.example.model.User"/>
         <!-- Add remaining Entity mappings here -->
         <mapping class="org.example.model.Restaurant"/>
+        <mapping class="org.example.model.FoodItem"/>
 
     </session-factory>
 </hibernate-configuration>

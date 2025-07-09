@@ -16,6 +16,9 @@ import org.example.repository.RestaurantRepositoryImpl;
 import org.example.repository.UserRepository;
 import org.example.repository.UserRepositoryImpl;
 import org.example.util.JwtUtil;
+import org.example.actions.restaurant.AddFoodItemAction;
+import org.example.repository.FoodItemRepository;
+import org.example.repository.FoodItemRepositoryImpl;
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -43,7 +46,8 @@ public class Main {
 
         // --- Dependency Injection ---
         UserRepository userRepository = new UserRepositoryImpl();
-        RestaurantRepository restaurantRepository = new RestaurantRepositoryImpl(); // 2. ساختن نمونه از ریپازیتوری رستوران
+        RestaurantRepository restaurantRepository = new RestaurantRepositoryImpl();
+        FoodItemRepository foodItemRepository = new FoodItemRepositoryImpl();
 
         // --- Global Filters ---
         before((request, response) -> {
@@ -92,5 +96,6 @@ public class Main {
         post("/restaurants", new CreateRestaurantAction(gson, userRepository, restaurantRepository));
         get("/restaurants/mine", new GetMyRestaurantsAction(gson, restaurantRepository));
         put("/restaurants/:id", new UpdateRestaurantAction(gson, restaurantRepository));
+        post("/restaurants/:id/item", new AddFoodItemAction(gson, restaurantRepository, foodItemRepository));
     }
 }
