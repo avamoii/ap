@@ -6,9 +6,7 @@ import com.google.gson.GsonBuilder;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
-import org.example.actions.restaurant.CreateRestaurantAction;
-import org.example.actions.restaurant.GetMyRestaurantsAction;
-import org.example.actions.restaurant.UpdateRestaurantAction;
+import org.example.actions.restaurant.*;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.RestaurantRepository;
@@ -16,7 +14,6 @@ import org.example.repository.RestaurantRepositoryImpl;
 import org.example.repository.UserRepository;
 import org.example.repository.UserRepositoryImpl;
 import org.example.util.JwtUtil;
-import org.example.actions.restaurant.AddFoodItemAction;
 import org.example.repository.FoodItemRepository;
 import org.example.repository.FoodItemRepositoryImpl;
 
@@ -97,5 +94,6 @@ public class Main {
         get("/restaurants/mine", new GetMyRestaurantsAction(gson, restaurantRepository));
         put("/restaurants/:id", new UpdateRestaurantAction(gson, restaurantRepository));
         post("/restaurants/:id/item", new AddFoodItemAction(gson, restaurantRepository, foodItemRepository));
+        put("/restaurants/:id/item/:item_id", new UpdateFoodItemAction(gson, foodItemRepository));
     }
 }

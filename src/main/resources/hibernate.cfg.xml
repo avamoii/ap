@@ -21,6 +21,7 @@
         <!-- Automatically update schema -->
         <property name="hibernate.hbm2ddl.auto">update</property>
 
+
         <!-- List of annotated classes -->
         <mapping class="org.example.model.User"/>
         <!-- Add remaining Entity mappings here -->
