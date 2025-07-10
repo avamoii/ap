@@ -83,4 +83,22 @@ public class FoodItemRepositoryImpl implements FoodItemRepository {
             throw new RuntimeException("Could not update food item", e);
         }
     }
+    @Override
+    public void delete(FoodItem foodItem) {
+        logger.debug("Attempting to delete food item with ID: {}", foodItem.getId());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            // Use session.remove() for deletion. It's the modern equivalent of session.delete().
+            session.remove(foodItem);
+            transaction.commit();
+            logger.info("SUCCESS: Food item with ID {} deleted.", foodItem.getId());
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("CRITICAL ERROR in delete method for food item ID {}", foodItem.getId(), e);
+            throw new RuntimeException("Could not delete food item", e);
+        }
+    }
 }

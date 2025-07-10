@@ -9,13 +9,13 @@ import org.example.actions.auth.*;
 import org.example.actions.restaurant.*;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
+import org.example.repository.FoodItemRepository;
+import org.example.repository.FoodItemRepositoryImpl;
 import org.example.repository.RestaurantRepository;
 import org.example.repository.RestaurantRepositoryImpl;
 import org.example.repository.UserRepository;
 import org.example.repository.UserRepositoryImpl;
 import org.example.util.JwtUtil;
-import org.example.repository.FoodItemRepository;
-import org.example.repository.FoodItemRepositoryImpl;
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -24,11 +24,13 @@ import static spark.Spark.*;
 
 public class Main {
     public static void main(String[] args) {
+        // --- Server and Environment Configuration ---
         port(1234);
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 
+        // --- Database Initialization ---
         try {
             HibernateUtil.getSessionFactory();
             System.out.println("Hibernate SessionFactory initialized successfully.");
@@ -37,6 +39,7 @@ public class Main {
             throw new ExceptionInInitializerError(ex);
         }
 
+        // --- Gson Configuration ---
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                 .create();
@@ -48,6 +51,13 @@ public class Main {
 
         // --- Global Filters ---
         before((request, response) -> {
+            // --- Content-Type Filter for 415 Unsupported Media Type ---
+            String method = request.requestMethod();
+            if ((method.equals("POST") || method.equals("PUT") || method.equals("PATCH")) && request.contentLength() > 0) {
+                if (request.contentType() == null || !request.contentType().equalsIgnoreCase("application/json")) {
+                    throw new UnsupportedMediaTypeException("Unsupported Media Type: Only application/json is supported.");
+                }
+            }
 
             // --- JWT Authentication Filter ---
             String path = request.pathInfo();
@@ -55,7 +65,6 @@ public class Main {
                 return;
             }
 
-            // 3. اضافه کردن مسیر رستوران به لیست مسیرهای محافظت‌شده
             if (path.startsWith("/auth/") || path.startsWith("/restaurants")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -69,12 +78,48 @@ public class Main {
         });
 
         // --- Global Exception Handlers ---
-        exception(ForbiddenException.class, (e, request, response) -> {
-            response.status(403); // Forbidden
+        exception(InvalidInputException.class, (e, request, response) -> {
+            response.status(400);
             response.type("application/json");
             response.body(gson.toJson(Map.of("error", e.getMessage())));
         });
-        // ... (سایر Handler ها بدون تغییر)
+
+        exception(UnauthorizedException.class, (e, request, response) -> {
+            response.status(401);
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        exception(ForbiddenException.class, (e, request, response) -> {
+            response.status(403);
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        exception(NotFoundException.class, (e, request, response) -> {
+            response.status(404);
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        exception(ResourceConflictException.class, (e, request, response) -> {
+            response.status(409);
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        exception(UnsupportedMediaTypeException.class, (e, request, response) -> {
+            response.status(415);
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", e.getMessage())));
+        });
+
+        exception(Exception.class, (e, request, response) -> {
+            e.printStackTrace();
+            response.status(500);
+            response.type("application/json");
+            response.body(gson.toJson(Map.of("error", "An unexpected internal server error occurred.")));
+        });
 
 
         //================================================================================================================
@@ -88,12 +133,14 @@ public class Main {
         put("/auth/profile", new UpdateUserProfileAction(gson, userRepository));
         post("/auth/logout", new LogoutUserAction(gson));
 
-
         // --- Restaurant Endpoints ---
         post("/restaurants", new CreateRestaurantAction(gson, userRepository, restaurantRepository));
         get("/restaurants/mine", new GetMyRestaurantsAction(gson, restaurantRepository));
         put("/restaurants/:id", new UpdateRestaurantAction(gson, restaurantRepository));
         post("/restaurants/:id/item", new AddFoodItemAction(gson, restaurantRepository, foodItemRepository));
         put("/restaurants/:id/item/:item_id", new UpdateFoodItemAction(gson, foodItemRepository));
+        delete("/restaurants/:id/item/:item_id", new DeleteFoodItemAction(gson, foodItemRepository));
+
+        System.out.println("Server started on port 1234. Endpoints are configured.");
     }
 }

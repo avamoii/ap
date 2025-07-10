@@ -29,16 +29,16 @@ public class UpdateFoodItemAction implements Route {
         Long ownerIdFromToken = request.attribute("userId");
         UpdateFoodItemRequest updateRequest = gson.fromJson(request.body(), UpdateFoodItemRequest.class);
 
-        // ۱. آیتم غذایی را از دیتابیس پیدا کن (مدیریت خطای 404)
+        //404
         FoodItem foodItemToUpdate = foodItemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Food item not found."));
 
-        // ۲. بررسی کن که آیتم غذایی متعلق به رستوران درخواستی باشد
+        //404
         if (!foodItemToUpdate.getRestaurant().getId().equals(restaurantId)) {
             throw new NotFoundException("Food item does not belong to the specified restaurant.");
         }
 
-        // ۳. بررسی مالکیت (مدیریت خطای 403)
+        //403
         if (!foodItemToUpdate.getRestaurant().getOwner().getId().equals(ownerIdFromToken)) {
             throw new ForbiddenException("Access denied. You are not the owner of this restaurant.");
         }
