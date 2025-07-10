@@ -1,7 +1,7 @@
 package org.example.model;
 
 import jakarta.persistence.*;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(name = "food_items")
@@ -36,8 +36,12 @@ public class FoodItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurant_id", nullable = false)
     private Restaurant restaurant;
-
+    // A food item can be in many menus, and a menu can have many food items.
+    @ManyToMany(mappedBy = "foodItems")
+    private List<Menu> menus = new ArrayList<>();
     // Getters and Setters
+    public List<Menu> getMenus() { return menus; }
+    public void setMenus(List<Menu> menus) { this.menus = menus; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }

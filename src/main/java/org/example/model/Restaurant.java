@@ -1,5 +1,5 @@
 package org.example.model;
-
+import java.util.*;
 import jakarta.persistence.*;
 
 @Entity
@@ -25,6 +25,12 @@ public class Restaurant {
     private Integer taxFee;
 
     private Integer additionalFee;
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Menu> menus = new ArrayList<>();
+
+    // و Getter/Setter آن را هم اضافه کنید:
+    public List<Menu> getMenus() { return menus; }
+    public void setMenus(List<Menu> menus) { this.menus = menus; }
 
     // A restaurant is owned by one user (seller)
     @ManyToOne(fetch = FetchType.LAZY)
