@@ -18,6 +18,7 @@ import org.example.repository.UserRepositoryImpl;
 import org.example.util.JwtUtil;
 import org.example.repository.MenuRepository;
 import org.example.repository.MenuRepositoryImpl;
+import org.example.actions.restaurant.RemoveFoodItemFromMenuAction;
 
 
 import java.util.Map;
@@ -146,7 +147,7 @@ public class Main {
         delete("/restaurants/:id/item/:item_id", new DeleteFoodItemAction(gson, foodItemRepository));
         //menu
         post("/restaurants/:id/menu", new CreateMenuAction(gson, restaurantRepository, menuRepository));
-
+        delete("/restaurants/:id/menu/:title/:item_id", new RemoveFoodItemFromMenuAction(gson, menuRepository));
         System.out.println("Server started on port 1234. Endpoints are configured.");
     }
 }
