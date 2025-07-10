@@ -19,6 +19,9 @@ import org.example.util.JwtUtil;
 import org.example.repository.MenuRepository;
 import org.example.repository.MenuRepositoryImpl;
 import org.example.actions.restaurant.RemoveFoodItemFromMenuAction;
+import org.example.actions.restaurant.GetRestaurantOrdersAction;
+import org.example.repository.OrderRepository;
+import org.example.repository.OrderRepositoryImpl;
 
 
 import java.util.Map;
@@ -53,6 +56,7 @@ public class Main {
         RestaurantRepository restaurantRepository = new RestaurantRepositoryImpl();
         FoodItemRepository foodItemRepository = new FoodItemRepositoryImpl();
         MenuRepository menuRepository = new MenuRepositoryImpl();
+        OrderRepository orderRepository = new OrderRepositoryImpl();
 
         // --- Global Filters ---
         before((request, response) -> {
@@ -148,6 +152,7 @@ public class Main {
         //menu
         post("/restaurants/:id/menu", new CreateMenuAction(gson, restaurantRepository, menuRepository));
         delete("/restaurants/:id/menu/:title/:item_id", new RemoveFoodItemFromMenuAction(gson, menuRepository));
+        get("/restaurants/:id/orders", new GetRestaurantOrdersAction(gson, restaurantRepository, orderRepository));
         System.out.println("Server started on port 1234. Endpoints are configured.");
     }
 }

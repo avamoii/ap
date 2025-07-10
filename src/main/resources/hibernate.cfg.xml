@@ -28,6 +28,8 @@
         <mapping class="org.example.model.Restaurant"/>
         <mapping class="org.example.model.FoodItem"/>
         <mapping class="org.example.model.Menu"/>
+        <mapping class="org.example.model.Order"/>
+
 
     </session-factory>
 </hibernate-configuration>
