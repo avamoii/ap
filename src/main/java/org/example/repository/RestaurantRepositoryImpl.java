@@ -2,13 +2,15 @@ package org.example.repository;
 
 import org.example.config.HibernateUtil;
 import org.example.model.Restaurant;
+import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.*;
-import org.hibernate.Hibernate;
-import org.hibernate.query.Query;
+
 
 public class RestaurantRepositoryImpl implements RestaurantRepository {
 
@@ -101,6 +103,41 @@ public class RestaurantRepositoryImpl implements RestaurantRepository {
             }
             logger.error("CRITICAL ERROR in update method for restaurant ID {}", restaurant.getId(), e);
             throw new RuntimeException("Could not update restaurant", e);
+        }
+    }
+    @Override
+    public List<Restaurant> findWithFilters(String search, List<String> keywords) {
+        logger.debug("Finding vendors with filters. Search: '{}', Keywords: {}", search, keywords);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            StringBuilder hql = new StringBuilder("SELECT DISTINCT r FROM Restaurant r");
+            Map<String, Object> parameters = new HashMap<>();
+            List<String> conditions = new ArrayList<>();
+
+            if (keywords != null && !keywords.isEmpty()) {
+                hql.append(" LEFT JOIN r.foodItems fi JOIN fi.keywords k");
+            }
+
+            if (search != null && !search.trim().isEmpty()) {
+                conditions.add("lower(r.name) LIKE :search");
+                parameters.put("search", "%" + search.toLowerCase() + "%");
+            }
+
+            if (keywords != null && !keywords.isEmpty()) {
+                conditions.add("k IN (:keywords)");
+                parameters.put("keywords", keywords);
+            }
+
+            if (!conditions.isEmpty()) {
+                hql.append(" WHERE ").append(String.join(" AND ", conditions));
+            }
+
+            Query<Restaurant> query = session.createQuery(hql.toString(), Restaurant.class);
+            parameters.forEach(query::setParameter);
+
+            return query.list();
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findWithFilters", e);
+            return Collections.emptyList();
         }
     }
 }

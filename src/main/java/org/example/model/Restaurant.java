@@ -1,6 +1,8 @@
 package org.example.model;
-import java.util.*;
+
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "restaurants")
@@ -19,23 +21,24 @@ public class Restaurant {
     @Column(nullable = false)
     private String phone;
 
-    @Lob // Annotation for large objects, suitable for Base64 strings
+    @Lob
     private String logoBase64;
 
     private Integer taxFee;
 
     private Integer additionalFee;
-    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Menu> menus = new ArrayList<>();
 
-    // و Getter/Setter آن را هم اضافه کنید:
-    public List<Menu> getMenus() { return menus; }
-    public void setMenus(List<Menu> menus) { this.menus = menus; }
-
-    // A restaurant is owned by one user (seller)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
+
+    // A restaurant can have many food items
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<FoodItem> foodItems = new ArrayList<>();
+
+    // A restaurant can have many menus
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Menu> menus = new ArrayList<>();
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -54,4 +57,8 @@ public class Restaurant {
     public void setAdditionalFee(Integer additionalFee) { this.additionalFee = additionalFee; }
     public User getOwner() { return owner; }
     public void setOwner(User owner) { this.owner = owner; }
+    public List<FoodItem> getFoodItems() { return foodItems; }
+    public void setFoodItems(List<FoodItem> foodItems) { this.foodItems = foodItems; }
+    public List<Menu> getMenus() { return menus; }
+    public void setMenus(List<Menu> menus) { this.menus = menus; }
 }

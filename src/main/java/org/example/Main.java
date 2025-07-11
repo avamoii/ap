@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
+import org.example.actions.buyer.ListVendorsAction;
 import org.example.actions.restaurant.*;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
@@ -23,6 +24,7 @@ import org.example.actions.restaurant.GetRestaurantOrdersAction;
 import org.example.repository.OrderRepository;
 import org.example.repository.OrderRepositoryImpl;
 import org.example.actions.restaurant.UpdateOrderStatusAction;
+
 
 
 import java.util.Map;
@@ -156,6 +158,8 @@ public class Main {
         delete("/restaurants/:id/menu/:title/:item_id", new RemoveFoodItemFromMenuAction(gson, menuRepository));
         get("/restaurants/:id/orders", new GetRestaurantOrdersAction(gson, restaurantRepository, orderRepository));
         patch("/restaurants/orders/:order_id", new UpdateOrderStatusAction(gson, orderRepository));
+        // --- Buyer Endpoints ---
+        post("/vendors", new ListVendorsAction(gson, restaurantRepository));
         System.out.println("Server started on port 1234. Endpoints are configured.");
     }
 }
