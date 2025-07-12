@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-
 public class RestaurantRepositoryImpl implements RestaurantRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(RestaurantRepositoryImpl.class);
@@ -23,17 +22,12 @@ public class RestaurantRepositoryImpl implements RestaurantRepository {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.persist(restaurant);
-
-            // Add flush to ensure data is written to the DB before the transaction commits.
             session.flush();
-
             transaction.commit();
             logger.info("SUCCESS: Restaurant saved with ID: {}", restaurant.getId());
             return restaurant;
         } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
+            if (transaction != null) transaction.rollback();
             logger.error("CRITICAL ERROR in save method for restaurant {}", restaurant.getName(), e);
             throw new RuntimeException("Could not save restaurant", e);
         }
@@ -43,13 +37,11 @@ public class RestaurantRepositoryImpl implements RestaurantRepository {
     public List<Restaurant> findByOwnerId(Long ownerId) {
         logger.debug("Attempting to find restaurants for owner ID: {}", ownerId);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // Using HQL to find restaurants based on the owner.id field
             Query<Restaurant> query = session.createQuery("FROM Restaurant WHERE owner.id = :ownerId", Restaurant.class);
             query.setParameter("ownerId", ownerId);
             return query.list();
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findByOwnerId for owner ID {}", ownerId, e);
-            // Return an empty list in case of an error
             return Collections.emptyList();
         }
     }
@@ -60,10 +52,13 @@ public class RestaurantRepositoryImpl implements RestaurantRepository {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Restaurant restaurant = session.get(Restaurant.class, id);
 
-            // This is crucial to prevent LazyInitializationException
+            // This is crucial to prevent LazyInitializationException in the Action layer.
             if (restaurant != null) {
-                // Explicitly initialize the owner association before the session closes
+                // We explicitly initialize all the associations we know will be needed.
                 Hibernate.initialize(restaurant.getOwner());
+                Hibernate.initialize(restaurant.getMenus());
+                // For each menu, also initialize its list of food items.
+                restaurant.getMenus().forEach(menu -> Hibernate.initialize(menu.getFoodItems()));
             }
 
             return Optional.ofNullable(restaurant);
@@ -98,13 +93,12 @@ public class RestaurantRepositoryImpl implements RestaurantRepository {
             logger.info("SUCCESS: Restaurant with ID {} updated.", updatedRestaurant.getId());
             return updatedRestaurant;
         } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
+            if (transaction != null) transaction.rollback();
             logger.error("CRITICAL ERROR in update method for restaurant ID {}", restaurant.getId(), e);
             throw new RuntimeException("Could not update restaurant", e);
         }
     }
+
     @Override
     public List<Restaurant> findWithFilters(String search, List<String> keywords) {
         logger.debug("Finding vendors with filters. Search: '{}', Keywords: {}", search, keywords);

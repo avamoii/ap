@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
+import org.example.actions.buyer.GetVendorMenuAction;
 import org.example.actions.buyer.ListVendorsAction;
 import org.example.actions.restaurant.*;
 import org.example.config.HibernateUtil;
@@ -160,6 +161,7 @@ public class Main {
         patch("/restaurants/orders/:order_id", new UpdateOrderStatusAction(gson, orderRepository));
         // --- Buyer Endpoints ---
         post("/vendors", new ListVendorsAction(gson, restaurantRepository));
+        get("/vendors/:id", new GetVendorMenuAction(gson, restaurantRepository));
         System.out.println("Server started on port 1234. Endpoints are configured.");
     }
 }
