@@ -30,8 +30,12 @@ public class Coupon {
     private LocalDate startDate;
 
     private LocalDate endDate;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id") // Can be null if no coupon is used
+    private Coupon coupon;
 
-    // Getters and Setters
+    public Coupon getCoupon() { return coupon; }
+    public void setCoupon(Coupon coupon) { this.coupon = coupon; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getCouponCode() { return couponCode; }

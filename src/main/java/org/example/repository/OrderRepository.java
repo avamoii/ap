@@ -9,4 +9,5 @@ public interface OrderRepository {
     List<Order> findByRestaurantIdWithFilters(Long restaurantId, Map<String, String[]> filters);
     Optional<Order> findById(Long id);
     Order update(Order order);
+    Order save(Order order);
 }

@@ -23,7 +23,7 @@ import static spark.Spark.*;
 public class Main {
     public static void main(String[] args) {
         // --- Server Configuration & Dependency Injection ---
-        port(1234);
+        port(1212);
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
@@ -111,6 +111,7 @@ public class Main {
         post("/items", new ListItemsAction(gson, foodItemRepository));
         get("/items/:id", new GetItemDetailsAction(gson, foodItemRepository));
         get("/coupons", new CheckCouponAction(gson, couponRepository));
+        post("/orders", new SubmitOrderAction(gson, userRepository, restaurantRepository, foodItemRepository, orderRepository, couponRepository));
 
         System.out.println("Server started on port 1234.");
     }

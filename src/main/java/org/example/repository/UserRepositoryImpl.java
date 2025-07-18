@@ -10,10 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-/**
- * Implementation of UserRepository using Hibernate.
- * This class contains all the database interaction logic.
- */
 public class UserRepositoryImpl implements UserRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(UserRepositoryImpl.class);

@@ -98,4 +98,21 @@ public class OrderRepositoryImpl implements OrderRepository {
             throw new RuntimeException("Could not update order", e);
         }
     }
+    @Override
+    public Order save(Order order) {
+        logger.debug("Attempting to save order for customer ID: {}", order.getCustomer().getId());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(order);
+            session.flush();
+            transaction.commit();
+            logger.info("SUCCESS: Order saved with ID: {}", order.getId());
+            return order;
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            logger.error("CRITICAL ERROR in save method for order", e);
+            throw new RuntimeException("Could not save order", e);
+        }
+    }
 }
