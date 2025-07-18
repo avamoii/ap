@@ -123,7 +123,7 @@ public class FoodItemRepositoryImpl implements FoodItemRepository {
 
             // Add max price condition.
             if (maxPrice != null) {
-                conditions.add("fi.price <= :maxPrice");
+                conditions.add("fi.price == :maxPrice");
                 parameters.put("maxPrice", maxPrice);
             }
 
