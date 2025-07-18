@@ -71,7 +71,18 @@ public class Main {
                 request.attribute("userId", Long.parseLong(claims.getSubject()));
                 request.attribute("userRole", claims.get("role", String.class));
             }
-        });
+
+        if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders")) {
+            String authHeader = request.headers("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
+            }
+            String token = authHeader.substring(7);
+            Claims claims = JwtUtil.verifyToken(token);
+            request.attribute("userId", Long.parseLong(claims.getSubject()));
+            request.attribute("userRole", claims.get("role", String.class));
+        }
+    });
 
         exception(InvalidInputException.class, (e, request, response) -> { response.status(400); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
         exception(UnauthorizedException.class, (e, request, response) -> { response.status(401); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
