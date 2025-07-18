@@ -29,6 +29,7 @@
         <mapping class="org.example.model.FoodItem"/>
         <mapping class="org.example.model.Menu"/>
         <mapping class="org.example.model.Order"/>
+        <mapping class="org.example.model.Coupon"/>
 
 
     </session-factory>

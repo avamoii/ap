@@ -6,15 +6,14 @@ import com.google.gson.GsonBuilder;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
-import org.example.actions.buyer.GetVendorMenuAction;
-import org.example.actions.buyer.ListItemsAction;
-import org.example.actions.buyer.ListVendorsAction;
+import org.example.actions.buyer.*;
 import org.example.actions.restaurant.*;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.*;
 import org.example.util.JwtUtil;
-import org.example.actions.buyer.GetItemDetailsAction;
+
+
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -43,6 +42,7 @@ public class Main {
         FoodItemRepository foodItemRepository = new FoodItemRepositoryImpl();
         MenuRepository menuRepository = new MenuRepositoryImpl();
         OrderRepository orderRepository = new OrderRepositoryImpl();
+        CouponRepository couponRepository = new CouponRepositoryImpl();
 
         // --- Global Filters & Exception Handlers ---
         before((request, response) -> {
@@ -110,6 +110,7 @@ public class Main {
         get("/vendors/:id", new GetVendorMenuAction(gson, restaurantRepository));
         post("/items", new ListItemsAction(gson, foodItemRepository));
         get("/items/:id", new GetItemDetailsAction(gson, foodItemRepository));
+        get("/coupons", new CheckCouponAction(gson, couponRepository));
 
         System.out.println("Server started on port 1234.");
     }
