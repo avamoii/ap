@@ -14,6 +14,7 @@ import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.*;
 import org.example.util.JwtUtil;
+import org.example.actions.buyer.GetItemDetailsAction;
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -108,6 +109,7 @@ public class Main {
         post("/vendors", new ListVendorsAction(gson, restaurantRepository));
         get("/vendors/:id", new GetVendorMenuAction(gson, restaurantRepository));
         post("/items", new ListItemsAction(gson, foodItemRepository));
+        get("/items/:id", new GetItemDetailsAction(gson, foodItemRepository));
 
         System.out.println("Server started on port 1234.");
     }
