@@ -1,7 +1,7 @@
 package org.example.repository;
 
 import org.example.model.FoodItem;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Interface for data access operations on FoodItem entities.
@@ -34,4 +34,5 @@ public interface FoodItemRepository {
      * @param foodItem The food item entity to delete.
      */
     void delete(FoodItem foodItem);
+    List<FoodItem> findWithFilters(String search, Integer maxPrice, List<String> keywords);
 }

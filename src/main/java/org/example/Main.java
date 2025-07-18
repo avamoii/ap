@@ -7,26 +7,13 @@ import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
 import org.example.actions.buyer.GetVendorMenuAction;
+import org.example.actions.buyer.ListItemsAction;
 import org.example.actions.buyer.ListVendorsAction;
 import org.example.actions.restaurant.*;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
-import org.example.repository.FoodItemRepository;
-import org.example.repository.FoodItemRepositoryImpl;
-import org.example.repository.RestaurantRepository;
-import org.example.repository.RestaurantRepositoryImpl;
-import org.example.repository.UserRepository;
-import org.example.repository.UserRepositoryImpl;
+import org.example.repository.*;
 import org.example.util.JwtUtil;
-import org.example.repository.MenuRepository;
-import org.example.repository.MenuRepositoryImpl;
-import org.example.actions.restaurant.RemoveFoodItemFromMenuAction;
-import org.example.actions.restaurant.GetRestaurantOrdersAction;
-import org.example.repository.OrderRepository;
-import org.example.repository.OrderRepositoryImpl;
-import org.example.actions.restaurant.UpdateOrderStatusAction;
-
-
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -35,13 +22,12 @@ import static spark.Spark.*;
 
 public class Main {
     public static void main(String[] args) {
-        // --- Server and Environment Configuration ---
+        // --- Server Configuration & Dependency Injection ---
         port(1234);
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 
-        // --- Database Initialization ---
         try {
             HibernateUtil.getSessionFactory();
             System.out.println("Hibernate SessionFactory initialized successfully.");
@@ -50,20 +36,14 @@ public class Main {
             throw new ExceptionInInitializerError(ex);
         }
 
-        // --- Gson Configuration ---
-        Gson gson = new GsonBuilder()
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .create();
-
-        // --- Dependency Injection ---
+        Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
         UserRepository userRepository = new UserRepositoryImpl();
         RestaurantRepository restaurantRepository = new RestaurantRepositoryImpl();
         FoodItemRepository foodItemRepository = new FoodItemRepositoryImpl();
         MenuRepository menuRepository = new MenuRepositoryImpl();
         OrderRepository orderRepository = new OrderRepositoryImpl();
 
-
-        // --- Global Filters ---
+        // --- Global Filters & Exception Handlers ---
         before((request, response) -> {
             // --- Content-Type Filter for 415 Unsupported Media Type ---
             String method = request.requestMethod();
@@ -79,7 +59,8 @@ public class Main {
                 return;
             }
 
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants")) {
+            // All protected routes are checked here.
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -91,49 +72,13 @@ public class Main {
             }
         });
 
-        // --- Global Exception Handlers ---
-        exception(InvalidInputException.class, (e, request, response) -> {
-            response.status(400);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(UnauthorizedException.class, (e, request, response) -> {
-            response.status(401);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(ForbiddenException.class, (e, request, response) -> {
-            response.status(403);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(NotFoundException.class, (e, request, response) -> {
-            response.status(404);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(ResourceConflictException.class, (e, request, response) -> {
-            response.status(409);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(UnsupportedMediaTypeException.class, (e, request, response) -> {
-            response.status(415);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", e.getMessage())));
-        });
-
-        exception(Exception.class, (e, request, response) -> {
-            e.printStackTrace();
-            response.status(500);
-            response.type("application/json");
-            response.body(gson.toJson(Map.of("error", "An unexpected internal server error occurred.")));
-        });
+        exception(InvalidInputException.class, (e, request, response) -> { response.status(400); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
+        exception(UnauthorizedException.class, (e, request, response) -> { response.status(401); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
+        exception(ForbiddenException.class, (e, request, response) -> { response.status(403); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
+        exception(NotFoundException.class, (e, request, response) -> { response.status(404); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
+        exception(ResourceConflictException.class, (e, request, response) -> { response.status(409); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
+        exception(UnsupportedMediaTypeException.class, (e, request, response) -> { response.status(415); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
+        exception(Exception.class, (e, request, response) -> { e.printStackTrace(); response.status(500); response.type("application/json"); response.body(gson.toJson(Map.of("error", "An unexpected internal server error occurred."))); });
 
 
         //================================================================================================================
@@ -154,14 +99,16 @@ public class Main {
         post("/restaurants/:id/item", new AddFoodItemAction(gson, restaurantRepository, foodItemRepository));
         put("/restaurants/:id/item/:item_id", new UpdateFoodItemAction(gson, foodItemRepository));
         delete("/restaurants/:id/item/:item_id", new DeleteFoodItemAction(gson, foodItemRepository));
-        //menu
         post("/restaurants/:id/menu", new CreateMenuAction(gson, restaurantRepository, menuRepository));
         delete("/restaurants/:id/menu/:title/:item_id", new RemoveFoodItemFromMenuAction(gson, menuRepository));
         get("/restaurants/:id/orders", new GetRestaurantOrdersAction(gson, restaurantRepository, orderRepository));
         patch("/restaurants/orders/:order_id", new UpdateOrderStatusAction(gson, orderRepository));
+
         // --- Buyer Endpoints ---
         post("/vendors", new ListVendorsAction(gson, restaurantRepository));
         get("/vendors/:id", new GetVendorMenuAction(gson, restaurantRepository));
-        System.out.println("Server started on port 1234. Endpoints are configured.");
+        post("/items", new ListItemsAction(gson, foodItemRepository));
+
+        System.out.println("Server started on port 1234.");
     }
 }

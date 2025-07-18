@@ -5,10 +5,11 @@ import org.example.model.FoodItem;
 import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Implementation of FoodItemRepository using Hibernate.
@@ -101,4 +102,51 @@ public class FoodItemRepositoryImpl implements FoodItemRepository {
             throw new RuntimeException("Could not delete food item", e);
         }
     }
+    @Override
+    public List<FoodItem> findWithFilters(String search, Integer maxPrice, List<String> keywords) {
+        logger.debug("Finding food items with filters. Search: '{}', Max Price: {}, Keywords: {}", search, maxPrice, keywords);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            StringBuilder hql = new StringBuilder("SELECT DISTINCT fi FROM FoodItem fi");
+            Map<String, Object> parameters = new HashMap<>();
+            List<String> conditions = new ArrayList<>();
+
+            // A JOIN is only necessary if we are filtering by keywords.
+            if (keywords != null && !keywords.isEmpty()) {
+                hql.append(" JOIN fi.keywords k");
+            }
+
+            // Add search condition for item's name or description.
+            if (search != null && !search.trim().isEmpty()) {
+                conditions.add("(lower(fi.name) LIKE :search OR lower(fi.description) LIKE :search)");
+                parameters.put("search", "%" + search.toLowerCase() + "%");
+            }
+
+            // Add max price condition.
+            if (maxPrice != null) {
+                conditions.add("fi.price <= :maxPrice");
+                parameters.put("maxPrice", maxPrice);
+            }
+
+            // Add keyword condition.
+            if (keywords != null && !keywords.isEmpty()) {
+                conditions.add("k IN (:keywords)");
+                parameters.put("keywords", keywords);
+            }
+
+            // Append WHERE clause if any conditions exist.
+            if (!conditions.isEmpty()) {
+                hql.append(" WHERE ").append(String.join(" AND ", conditions));
+            }
+
+            Query<FoodItem> query = session.createQuery(hql.toString(), FoodItem.class);
+            parameters.forEach(query::setParameter);
+
+            return query.list();
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findWithFilters for food items", e);
+            return Collections.emptyList();
+        }
+    }
 }
+
+
