@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class giySubmitOrderAction implements Route {
+public class SubmitOrderAction implements Route {
     private final Gson gson;
     private final UserRepository userRepository;
     private final RestaurantRepository restaurantRepository;
