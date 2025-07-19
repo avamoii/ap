@@ -13,8 +13,6 @@ import org.example.exception.*;
 import org.example.repository.*;
 import org.example.util.JwtUtil;
 
-
-
 import java.util.Map;
 import java.util.logging.LogManager;
 
@@ -23,7 +21,7 @@ import static spark.Spark.*;
 public class Main {
     public static void main(String[] args) {
         // --- Server Configuration & Dependency Injection ---
-        port(1212);
+        port(1234); // You can change this port if you need to
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
@@ -37,6 +35,8 @@ public class Main {
         }
 
         Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+
+        // --- Dependency Injection: Create one instance of each repository ---
         UserRepository userRepository = new UserRepositoryImpl();
         RestaurantRepository restaurantRepository = new RestaurantRepositoryImpl();
         FoodItemRepository foodItemRepository = new FoodItemRepositoryImpl();
@@ -57,11 +57,11 @@ public class Main {
             // --- JWT Authentication Filter ---
             String path = request.pathInfo();
             if (path.equals("/auth/register") || path.equals("/auth/login")) {
-                return;
+                return; // Skip auth for public routes
             }
 
-            // All protected routes are checked here.
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items")) {
+            // A single, unified check for all protected routes
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -71,18 +71,7 @@ public class Main {
                 request.attribute("userId", Long.parseLong(claims.getSubject()));
                 request.attribute("userRole", claims.get("role", String.class));
             }
-
-        if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders")) {
-            String authHeader = request.headers("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
-            }
-            String token = authHeader.substring(7);
-            Claims claims = JwtUtil.verifyToken(token);
-            request.attribute("userId", Long.parseLong(claims.getSubject()));
-            request.attribute("userRole", claims.get("role", String.class));
-        }
-    });
+        });
 
         exception(InvalidInputException.class, (e, request, response) -> { response.status(400); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
         exception(UnauthorizedException.class, (e, request, response) -> { response.status(401); response.type("application/json"); response.body(gson.toJson(Map.of("error", e.getMessage()))); });
@@ -122,10 +111,17 @@ public class Main {
         post("/items", new ListItemsAction(gson, foodItemRepository));
         get("/items/:id", new GetItemDetailsAction(gson, foodItemRepository));
         get("/coupons", new CheckCouponAction(gson, couponRepository));
+
+        // --- Favorites Endpoints ---
+        get("/favorites", new GetFavoritesAction(gson, userRepository));
+        put("/favorites/:restaurantId", new AddFavoriteRestaurantAction(gson, userRepository, restaurantRepository));
+        delete("/favorites/:restaurantId", new RemoveFavoriteRestaurantAction(gson, userRepository));
+
+        // --- Order Endpoints ---
         post("/orders", new SubmitOrderAction(gson, userRepository, restaurantRepository, foodItemRepository, orderRepository, couponRepository));
         get("/orders/:id", new GetOrderDetailsAction(gson, orderRepository));
-        get("/orders", new GetOrderHistoryAction(gson, orderRepository));
+        get("/orders/history", new GetOrderHistoryAction(gson, orderRepository));
 
-        System.out.println("Server started on port 1234.");
+        System.out.println("Server started on port 1234. Endpoints are configured.");
     }
 }

@@ -2,6 +2,7 @@ package org.example.repository;
 
 import org.example.config.HibernateUtil;
 import org.example.model.User;
+import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -48,19 +49,14 @@ public class UserRepositoryImpl implements UserRepository {
             transaction = session.beginTransaction();
             session.persist(user);
 
-            // Explicitly flush the session to force synchronization with the database
-            logger.debug("Flushing session...");
+            // This line is crucial to ensure data is written to the DB immediately.
             session.flush();
 
-            // Commit the transaction
-            logger.debug("Committing transaction...");
             transaction.commit();
-
             logger.info("SUCCESS: User saved with ID: {}", user.getId());
             return user;
         } catch (Exception e) {
             if (transaction != null) {
-                logger.error("Transaction is not null, rolling back...");
                 transaction.rollback();
             }
             logger.error("CRITICAL ERROR in save method", e);
@@ -74,6 +70,8 @@ public class UserRepositoryImpl implements UserRepository {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             User user = session.get(User.class, id);
             if (user != null) {
+                // Initialize the list of favorite restaurants to prevent LazyInitializationException
+                Hibernate.initialize(user.getFavoriteRestaurants());
                 logger.info("SUCCESS: User found with ID: {}", id);
             } else {
                 logger.warn("FAILURE: User with ID '{}' was NOT found.", id);
