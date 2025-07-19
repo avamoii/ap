@@ -115,4 +115,37 @@ public class OrderRepositoryImpl implements OrderRepository {
             throw new RuntimeException("Could not save order", e);
         }
     }
+    @Override
+    public List<Order> findByCustomerIdWithFilters(Long customerId, Map<String, String[]> filters) {
+        logger.debug("Finding order history for customer ID: {} with filters", customerId);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Start with the base query and necessary joins
+            StringBuilder hql = new StringBuilder("SELECT o FROM Order o JOIN o.restaurant r WHERE o.customer.id = :customerId");
+            Map<String, Object> parameters = new java.util.HashMap<>();
+            parameters.put("customerId", customerId);
+
+            // Dynamically add conditions based on filters
+            if (filters.containsKey("vendor") && filters.get("vendor")[0] != null && !filters.get("vendor")[0].isEmpty()) {
+                hql.append(" AND lower(r.name) LIKE :vendorName");
+                parameters.put("vendorName", "%" + filters.get("vendor")[0].toLowerCase() + "%");
+            }
+
+            // The 'search' can look into restaurant name or item names. This requires another join.
+            if (filters.containsKey("search") && filters.get("search")[0] != null && !filters.get("search")[0].isEmpty()) {
+                hql.append(" AND (lower(r.name) LIKE :search OR EXISTS (SELECT 1 FROM o.items i WHERE lower(i.name) LIKE :search))");
+                parameters.put("search", "%" + filters.get("search")[0].toLowerCase() + "%");
+            }
+
+            hql.append(" ORDER BY o.createdAt DESC"); // Show the most recent orders first
+
+            Query<Order> query = session.createQuery(hql.toString(), Order.class);
+            parameters.forEach(query::setParameter);
+
+            return query.list();
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findByCustomerIdWithFilters", e);
+            return new ArrayList<>();
+        }
+    }
 }
+

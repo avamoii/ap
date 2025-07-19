@@ -10,4 +10,5 @@ public interface OrderRepository {
     Optional<Order> findById(Long id);
     Order update(Order order);
     Order save(Order order);
+    List<Order> findByCustomerIdWithFilters(Long customerId, Map<String, String[]> filters);
 }
