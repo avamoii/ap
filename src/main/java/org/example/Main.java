@@ -123,6 +123,7 @@ public class Main {
         get("/items/:id", new GetItemDetailsAction(gson, foodItemRepository));
         get("/coupons", new CheckCouponAction(gson, couponRepository));
         post("/orders", new SubmitOrderAction(gson, userRepository, restaurantRepository, foodItemRepository, orderRepository, couponRepository));
+        get("/orders/:id", new GetOrderDetailsAction(gson, orderRepository));
 
         System.out.println("Server started on port 1234.");
     }

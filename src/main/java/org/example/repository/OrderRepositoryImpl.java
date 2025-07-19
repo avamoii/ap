@@ -66,10 +66,10 @@ public class OrderRepositoryImpl implements OrderRepository {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Order order = session.get(Order.class, id);
             if (order != null) {
-                // Initialize associations to prevent LazyInitializationException
-                Hibernate.initialize(order.getRestaurant());
-                Hibernate.initialize(order.getRestaurant().getOwner());
+                // Initialize all required associations to prevent LazyInitializationException
                 Hibernate.initialize(order.getCustomer());
+                Hibernate.initialize(order.getRestaurant());
+                Hibernate.initialize(order.getRestaurant().getOwner()); // Crucial for seller check
                 Hibernate.initialize(order.getItems());
                 if (order.getCourier() != null) {
                     Hibernate.initialize(order.getCourier());
