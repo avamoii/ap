@@ -30,6 +30,7 @@
         <mapping class="org.example.model.Menu"/>
         <mapping class="org.example.model.Order"/>
         <mapping class="org.example.model.Coupon"/>
+        <mapping class="org.example.model.Rating"/>
 
 
     </session-factory>

@@ -21,7 +21,7 @@ import static spark.Spark.*;
 public class Main {
     public static void main(String[] args) {
         // --- Server Configuration & Dependency Injection ---
-        port(1234); // You can change this port if you need to
+        port(1212); // You can change this port if you need to
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
@@ -112,6 +112,7 @@ public class Main {
         get("/items/:id", new GetItemDetailsAction(gson, foodItemRepository));
         get("/coupons", new CheckCouponAction(gson, couponRepository));
 
+
         // --- Favorites Endpoints ---
         get("/favorites", new GetFavoritesAction(gson, userRepository));
         put("/favorites/:restaurantId", new AddFavoriteRestaurantAction(gson, userRepository, restaurantRepository));
@@ -121,6 +122,9 @@ public class Main {
         post("/orders", new SubmitOrderAction(gson, userRepository, restaurantRepository, foodItemRepository, orderRepository, couponRepository));
         get("/orders/:id", new GetOrderDetailsAction(gson, orderRepository));
         get("/orders/history", new GetOrderHistoryAction(gson, orderRepository));
+
+        // --- Rating Endpoints ---
+        post("/orders/:order_id/rating", new SubmitRatingAction(gson, orderRepository, new RatingRepositoryImpl()));
 
         System.out.println("Server started on port 1234. Endpoints are configured.");
     }
