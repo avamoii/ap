@@ -12,7 +12,13 @@ public class Rating {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne // Each order can have only one rating
+    // A rating is for a specific food item.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "food_item_id", nullable = false)
+    private FoodItem foodItem;
+
+    // The order this rating is associated with.
+    @OneToOne
     @JoinColumn(name = "order_id", nullable = false, unique = true)
     private Order order;
 
@@ -38,6 +44,8 @@ public class Rating {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public FoodItem getFoodItem() { return foodItem; }
+    public void setFoodItem(FoodItem foodItem) { this.foodItem = foodItem; }
     public Order getOrder() { return order; }
     public void setOrder(Order order) { this.order = order; }
     public User getUser() { return user; }

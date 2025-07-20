@@ -125,6 +125,7 @@ public class Main {
 
         // --- Rating Endpoints ---
         post("/orders/:order_id/rating", new SubmitRatingAction(gson, orderRepository, new RatingRepositoryImpl()));
+        get("/orders/:order_id/rating", new GetItemRatingsAction(gson, orderRepository, new RatingRepositoryImpl()));
 
         System.out.println("Server started on port 1234. Endpoints are configured.");
     }
