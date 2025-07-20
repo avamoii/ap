@@ -62,4 +62,55 @@ public class RatingRepositoryImpl implements RatingRepository {
             return Collections.emptyList();
         }
     }
+    @Override
+    public Optional<Rating> findById(Long id) {
+        logger.debug("Attempting to find rating by ID: {}", id);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Rating rating = session.get(Rating.class, id);
+            if (rating != null) {
+                // Initialize user for ownership checks
+                Hibernate.initialize(rating.getUser());
+                Hibernate.initialize(rating.getFoodItem());
+            }
+            return Optional.ofNullable(rating);
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findById for rating ID {}", id, e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Rating update(Rating rating) {
+        logger.debug("Attempting to update rating with ID: {}", rating.getId());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Rating updatedRating = session.merge(rating);
+            transaction.commit();
+            logger.info("SUCCESS: Rating with ID {} updated.", updatedRating.getId());
+            return updatedRating;
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            logger.error("CRITICAL ERROR in update method for rating ID {}", rating.getId(), e);
+            throw new RuntimeException("Could not update rating", e);
+        }
+    }
+
+    @Override
+    public void delete(Rating rating) {
+        logger.debug("Attempting to delete rating with ID: {}", rating.getId());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.remove(rating);
+            transaction.commit();
+            logger.info("SUCCESS: Rating with ID {} deleted.", rating.getId());
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            logger.error("CRITICAL ERROR in delete method for rating ID {}", rating.getId(), e);
+            throw new RuntimeException("Could not delete rating", e);
+        }
+    }
 }
+
+

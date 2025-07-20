@@ -12,6 +12,8 @@ import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.*;
 import org.example.util.JwtUtil;
+import org.example.actions.buyer.GetItemDetailsAction;
+import org.example.repository.RatingRepository;
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -43,6 +45,7 @@ public class Main {
         MenuRepository menuRepository = new MenuRepositoryImpl();
         OrderRepository orderRepository = new OrderRepositoryImpl();
         CouponRepository couponRepository = new CouponRepositoryImpl();
+        RatingRepository ratingRepository = new RatingRepositoryImpl();
 
         // --- Global Filters & Exception Handlers ---
         before((request, response) -> {
@@ -61,7 +64,7 @@ public class Main {
             }
 
             // A single, unified check for all protected routes
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites")) {
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -124,8 +127,13 @@ public class Main {
         get("/orders/history", new GetOrderHistoryAction(gson, orderRepository));
 
         // --- Rating Endpoints ---
-        post("/orders/:order_id/rating", new SubmitRatingAction(gson, orderRepository, new RatingRepositoryImpl()));
-        get("/orders/:order_id/rating", new GetItemRatingsAction(gson, orderRepository, new RatingRepositoryImpl()));
+        post("/ratings", new SubmitRatingAction(gson, orderRepository, ratingRepository));
+        get("/ratings/items/:item_id", new GetItemRatingsAction(gson, ratingRepository));
+        get("/ratings/:id", new GetRatingDetailsAction(gson, ratingRepository));
+        delete("/ratings/:id", new DeleteRatingAction(gson, ratingRepository));
+        put("/ratings/:id", new UpdateRatingAction(gson, ratingRepository));
+
+
 
         System.out.println("Server started on port 1234. Endpoints are configured.");
     }

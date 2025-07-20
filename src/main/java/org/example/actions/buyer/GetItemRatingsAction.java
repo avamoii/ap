@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import org.example.dto.ItemRatingsResponseDTO;
 import org.example.dto.RatingDTO;
 import org.example.model.Rating;
-import org.example.repository.OrderRepository;
 import org.example.repository.RatingRepository;
 import spark.Request;
 import spark.Response;
@@ -18,7 +17,7 @@ public class GetItemRatingsAction implements Route {
     private final Gson gson;
     private final RatingRepository ratingRepository;
 
-    public GetItemRatingsAction(Gson gson, OrderRepository orderRepository, RatingRepository ratingRepository) {
+    public GetItemRatingsAction(Gson gson, RatingRepository ratingRepository) {
         this.gson = gson;
         this.ratingRepository = ratingRepository;
     }
