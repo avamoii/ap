@@ -40,7 +40,8 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "restaurant_id")
     )
     private List<Restaurant> favoriteRestaurants = new ArrayList<>();
-
+    @Column(nullable = false, columnDefinition = "INTEGER DEFAULT 0")
+    private Integer walletBalance = 0;
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -64,4 +65,6 @@ public class User {
     public void setBankInfo(BankInfo bankInfo) { this.bankInfo = bankInfo; }
     public List<Restaurant> getFavoriteRestaurants() { return favoriteRestaurants; }
     public void setFavoriteRestaurants(List<Restaurant> favoriteRestaurants) { this.favoriteRestaurants = favoriteRestaurants; }
+    public Integer getWalletBalance() { return walletBalance; }
+    public void setWalletBalance(Integer walletBalance) { this.walletBalance = walletBalance; }
 }

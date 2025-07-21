@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface TransactionRepository {
     List<Transaction> findByUserId(Long userId);
+    Transaction save(Transaction transaction);
 }

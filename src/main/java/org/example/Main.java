@@ -16,6 +16,7 @@ import org.example.util.JwtUtil;
 import org.example.actions.buyer.GetItemDetailsAction;
 import org.example.repository.RatingRepository;
 import org.example.actions.courier.*;
+import org.example.actions.wallet.*;
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -25,7 +26,7 @@ import static spark.Spark.*;
 public class Main {
     public static void main(String[] args) {
         // --- Server Configuration & Dependency Injection ---
-        port(1213); // You can change this port if you need to
+        port(1214); // You can change this port if you need to
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
@@ -68,7 +69,7 @@ public class Main {
             }
 
             // A single, unified check for all protected routes
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")||(path.startsWith("/delivery"))||(path.startsWith("/tarnsactions"))){
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")||path.startsWith("/delivery")||path.startsWith("/tarnsactions")||path.startsWith("/wallet")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -142,6 +143,8 @@ public class Main {
         get("/delivery/:history", new GetDeliveryHistoryAction(gson, orderRepository));
         // --- Transaction Endpoints ---
         get("/transactions", new GetTransactionHistoryAction(gson, transactionRepository));
+        post("/wallet/top-up", new TopUpWalletAction(gson, userRepository, transactionRepository));
+
 
 
         System.out.println("Server started on port 1213. Endpoints are configured.");
