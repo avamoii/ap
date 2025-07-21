@@ -1,9 +1,8 @@
 package org.example.repository;
 
 import org.example.config.HibernateUtil;
-import org.example.model.Transaction; // ایمپورت کردن موجودیت خودمان
+import org.example.model.Transaction;
 import org.hibernate.Session;
-// ایمپورت org.hibernate.Transaction حذف می‌شود
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,9 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             Query<Transaction> query = session.createQuery(
                     "FROM Transaction WHERE user.id = :userId ORDER BY createdAt DESC", Transaction.class);
             query.setParameter("userId", userId);
-            return query.list();
+            List<Transaction> transactions = query.list();
+            logger.info("Found {} transactions for user ID: {}", transactions.size(), userId);
+            return transactions;
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findByUserId for user ID {}", userId, e);
             return new ArrayList<>();
@@ -32,14 +33,11 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     @Override
     public Transaction save(Transaction transaction) {
         logger.debug("Attempting to save transaction for user ID: {}", transaction.getUser().getId());
-
-        // استفاده از نام کامل برای جلوگیری از تداخل
         org.hibernate.Transaction hibernateTransaction = null;
-
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             hibernateTransaction = session.beginTransaction();
             session.persist(transaction);
-            session.flush();
+            session.flush(); // Ensures data is sent to the DB
             hibernateTransaction.commit();
             logger.info("SUCCESS: Transaction saved with ID: {}", transaction.getId());
             return transaction;

@@ -42,29 +42,6 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public User save(User user) {
-        logger.debug("Attempting to save user with phone: '{}'", user.getPhoneNumber());
-        Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            transaction = session.beginTransaction();
-            session.persist(user);
-
-            // This line is crucial to ensure data is written to the DB immediately.
-            session.flush();
-
-            transaction.commit();
-            logger.info("SUCCESS: User saved with ID: {}", user.getId());
-            return user;
-        } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            logger.error("CRITICAL ERROR in save method", e);
-            throw new RuntimeException("Could not save user", e);
-        }
-    }
-
-    @Override
     public Optional<User> findById(Long id) {
         logger.debug("Attempting to find user by ID: {}", id);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -84,20 +61,36 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public User save(User user) {
+        logger.debug("Attempting to save user with phone: '{}'", user.getPhoneNumber());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(user);
+            session.flush(); // Ensures data is sent to the DB
+            transaction.commit();
+            logger.info("SUCCESS: User saved with ID: {}", user.getId());
+            return user;
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            logger.error("CRITICAL ERROR in save method for user", e);
+            throw new RuntimeException("Could not save user", e);
+        }
+    }
+
+    @Override
     public User update(User user) {
         logger.debug("Attempting to update user with ID: {}", user.getId());
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             User updatedUser = session.merge(user);
-            session.flush();
+            session.flush(); // Ensures data is sent to the DB
             transaction.commit();
             logger.info("SUCCESS: User with ID {} updated.", updatedUser.getId());
             return updatedUser;
         } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
+            if (transaction != null) transaction.rollback();
             logger.error("CRITICAL ERROR in update method for user ID {}", user.getId(), e);
             throw new RuntimeException("Could not update user", e);
         }

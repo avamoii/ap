@@ -7,16 +7,14 @@ import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
 import org.example.actions.buyer.*;
+import org.example.actions.courier.*;
 import org.example.actions.restaurant.*;
-import org.example.actions.transaction.*;
+import org.example.actions.transaction.GetTransactionHistoryAction;
+import org.example.actions.wallet.TopUpWalletAction;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.*;
 import org.example.util.JwtUtil;
-import org.example.actions.buyer.GetItemDetailsAction;
-import org.example.repository.RatingRepository;
-import org.example.actions.courier.*;
-import org.example.actions.wallet.*;
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -26,7 +24,7 @@ import static spark.Spark.*;
 public class Main {
     public static void main(String[] args) {
         // --- Server Configuration & Dependency Injection ---
-        port(1214); // You can change this port if you need to
+        port(1214); // Using your specified port
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
@@ -51,10 +49,9 @@ public class Main {
         RatingRepository ratingRepository = new RatingRepositoryImpl();
         TransactionRepository transactionRepository = new TransactionRepositoryImpl();
 
-
         // --- Global Filters & Exception Handlers ---
         before((request, response) -> {
-            // --- Content-Type Filter for 415 Unsupported Media Type ---
+            // --- Content-Type Filter
             String method = request.requestMethod();
             if ((method.equals("POST") || method.equals("PUT") || method.equals("PATCH")) && request.contentLength() > 0) {
                 if (request.contentType() == null || !request.contentType().equalsIgnoreCase("application/json")) {
@@ -65,11 +62,11 @@ public class Main {
             // --- JWT Authentication Filter ---
             String path = request.pathInfo();
             if (path.equals("/auth/register") || path.equals("/auth/login")) {
-                return; // Skip auth for public routes
+                return;
             }
 
-            // A single, unified check for all protected routes
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")||path.startsWith("/delivery")||path.startsWith("/tarnsactions")||path.startsWith("/wallet")) {
+            // A single, unified check for all protected routes with correct spelling
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings") || path.startsWith("/deliveries") || path.startsWith("/transactions") || path.startsWith("/wallet")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -120,7 +117,6 @@ public class Main {
         get("/items/:id", new GetItemDetailsAction(gson, foodItemRepository));
         get("/coupons", new CheckCouponAction(gson, couponRepository));
 
-
         // --- Favorites Endpoints ---
         get("/favorites", new GetFavoritesAction(gson, userRepository));
         put("/favorites/:restaurantId", new AddFavoriteRestaurantAction(gson, userRepository, restaurantRepository));
@@ -135,18 +131,18 @@ public class Main {
         post("/ratings", new SubmitRatingAction(gson, orderRepository, ratingRepository));
         get("/ratings/items/:item_id", new GetItemRatingsAction(gson, ratingRepository));
         get("/ratings/:id", new GetRatingDetailsAction(gson, ratingRepository));
-        delete("/ratings/:id", new DeleteRatingAction(gson, ratingRepository));
         put("/ratings/:id", new UpdateRatingAction(gson, ratingRepository));
+        delete("/ratings/:id", new DeleteRatingAction(gson, ratingRepository));
+
         // --- Courier Endpoints ---
-        get("/delivery/available", new GetAvailableDeliveriesAction(gson, orderRepository));
-        patch("/delivery/:order_id", new UpdateDeliveryStatusAction(gson, orderRepository, userRepository));
-        get("/delivery/:history", new GetDeliveryHistoryAction(gson, orderRepository));
-        // --- Transaction Endpoints ---
+        get("/deliveries/available", new GetAvailableDeliveriesAction(gson, orderRepository));
+        patch("/deliveries/:order_id", new UpdateDeliveryStatusAction(gson, orderRepository, userRepository));
+        get("/deliveries/history", new GetDeliveryHistoryAction(gson, orderRepository));
+
+        // --- Transaction & Wallet Endpoints ---
         get("/transactions", new GetTransactionHistoryAction(gson, transactionRepository));
         post("/wallet/top-up", new TopUpWalletAction(gson, userRepository, transactionRepository));
 
-
-
-        System.out.println("Server started on port 1213. Endpoints are configured.");
+        System.out.println("Server started on port 1214. Endpoints are configured.");
     }
 }
