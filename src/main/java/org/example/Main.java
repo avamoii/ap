@@ -8,6 +8,7 @@ import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
 import org.example.actions.buyer.*;
 import org.example.actions.courier.*;
+import org.example.actions.payment.MakePaymentAction;
 import org.example.actions.restaurant.*;
 import org.example.actions.transaction.GetTransactionHistoryAction;
 import org.example.actions.wallet.TopUpWalletAction;
@@ -66,7 +67,7 @@ public class Main {
             }
 
             // A single, unified check for all protected routes with correct spelling
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings") || path.startsWith("/deliveries") || path.startsWith("/transactions") || path.startsWith("/wallet")) {
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings") || path.startsWith("/deliveries") || path.startsWith("/transactions") || path.startsWith("/wallet")||path.startsWith("/payment")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -142,7 +143,7 @@ public class Main {
         // --- Transaction & Wallet Endpoints ---
         get("/transactions", new GetTransactionHistoryAction(gson, transactionRepository));
         post("/wallet/top-up", new TopUpWalletAction(gson, userRepository, transactionRepository));
-
+        post("/payment/online", new MakePaymentAction(gson, orderRepository, userRepository, transactionRepository));
         System.out.println("Server started on port 1214. Endpoints are configured.");
     }
 }
