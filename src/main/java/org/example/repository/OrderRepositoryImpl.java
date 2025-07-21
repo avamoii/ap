@@ -83,29 +83,16 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public Order update(Order order) {
-        logger.debug("Attempting to update order with ID: {}", order.getId());
-        Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            transaction = session.beginTransaction();
-            Order updatedOrder = session.merge(order);
-            transaction.commit();
-            logger.info("SUCCESS: Order with ID {} updated.", updatedOrder.getId());
-            return updatedOrder;
-        } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
-            logger.error("CRITICAL ERROR in update method for order ID {}", order.getId(), e);
-            throw new RuntimeException("Could not update order", e);
-        }
-    }
-    @Override
     public Order save(Order order) {
         logger.debug("Attempting to save order for customer ID: {}", order.getCustomer().getId());
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.persist(order);
+
+            // This line is crucial to ensure data is written to the DB immediately.
             session.flush();
+
             transaction.commit();
             logger.info("SUCCESS: Order saved with ID: {}", order.getId());
             return order;
@@ -115,6 +102,28 @@ public class OrderRepositoryImpl implements OrderRepository {
             throw new RuntimeException("Could not save order", e);
         }
     }
+
+    @Override
+    public Order update(Order order) {
+        logger.debug("Attempting to update order with ID: {}", order.getId());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Order updatedOrder = session.merge(order);
+
+            // This line is crucial to ensure data is written to the DB immediately.
+            session.flush();
+
+            transaction.commit();
+            logger.info("SUCCESS: Order with ID {} updated.", updatedOrder.getId());
+            return updatedOrder;
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            logger.error("CRITICAL ERROR in update method for order ID {}", order.getId(), e);
+            throw new RuntimeException("Could not update order", e);
+        }
+    }
+
     @Override
     public List<Order> findByCustomerIdWithFilters(Long customerId, Map<String, String[]> filters) {
         logger.debug("Finding order history for customer ID: {} with filters", customerId);
@@ -156,6 +165,40 @@ public class OrderRepositoryImpl implements OrderRepository {
             return query.list();
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findByStatus for status {}", status, e);
+            return new ArrayList<>();
+        }
+    }
+    @Override
+    public List<Order> findByCourierIdWithFilters(Long courierId, Map<String, String[]> filters) {
+        logger.debug("Finding delivery history for courier ID: {} with filters", courierId);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Start with the base query and necessary joins
+            StringBuilder hql = new StringBuilder("SELECT o FROM Order o JOIN o.restaurant r JOIN o.customer c WHERE o.courier.id = :courierId");
+            Map<String, Object> parameters = new java.util.HashMap<>();
+            parameters.put("courierId", courierId);
+
+            // Dynamically add conditions based on filters
+            if (filters.containsKey("vendor") && filters.get("vendor")[0] != null && !filters.get("vendor")[0].isEmpty()) {
+                hql.append(" AND lower(r.name) LIKE :vendorName");
+                parameters.put("vendorName", "%" + filters.get("vendor")[0].toLowerCase() + "%");
+            }
+            if (filters.containsKey("user") && filters.get("user")[0] != null && !filters.get("user")[0].isEmpty()) {
+                hql.append(" AND lower(c.firstName || ' ' || c.lastName) LIKE :userName");
+                parameters.put("userName", "%" + filters.get("user")[0].toLowerCase() + "%");
+            }
+            if (filters.containsKey("search") && filters.get("search")[0] != null && !filters.get("search")[0].isEmpty()) {
+                hql.append(" AND (lower(r.name) LIKE :search OR lower(c.firstName || ' ' || c.lastName) LIKE :search)");
+                parameters.put("search", "%" + filters.get("search")[0].toLowerCase() + "%");
+            }
+
+            hql.append(" ORDER BY o.createdAt DESC"); // Show the most recent orders first
+
+            Query<Order> query = session.createQuery(hql.toString(), Order.class);
+            parameters.forEach(query::setParameter);
+
+            return query.list();
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findByCourierIdWithFilters", e);
             return new ArrayList<>();
         }
     }

@@ -13,4 +13,5 @@ public interface OrderRepository {
     Order save(Order order);
     List<Order> findByCustomerIdWithFilters(Long customerId, Map<String, String[]> filters);
     List<Order> findByStatus(OrderStatus status);
+    List<Order> findByCourierIdWithFilters(Long courierId, Map<String, String[]> filters);
 }

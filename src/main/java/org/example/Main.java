@@ -24,7 +24,7 @@ import static spark.Spark.*;
 public class Main {
     public static void main(String[] args) {
         // --- Server Configuration & Dependency Injection ---
-        port(1212); // You can change this port if you need to
+        port(1213); // You can change this port if you need to
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
@@ -65,7 +65,7 @@ public class Main {
             }
 
             // A single, unified check for all protected routes
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")||(path.startsWith("/courier"))) {
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")||(path.startsWith("/delivery"))) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -134,10 +134,11 @@ public class Main {
         delete("/ratings/:id", new DeleteRatingAction(gson, ratingRepository));
         put("/ratings/:id", new UpdateRatingAction(gson, ratingRepository));
         // --- Courier Endpoints ---
-        get("/deliveries/available", new GetAvailableDeliveriesAction(gson, orderRepository));
-        patch("/deliveries/:order_id", new UpdateDeliveryStatusAction(gson, orderRepository, userRepository));;
+        get("/delivery/available", new GetAvailableDeliveriesAction(gson, orderRepository));
+        patch("/delivery/:order_id", new UpdateDeliveryStatusAction(gson, orderRepository, userRepository));
+        get("/delivery/:history", new GetDeliveryHistoryAction(gson, orderRepository));
 
 
-        System.out.println("Server started on port 1234. Endpoints are configured.");
+        System.out.println("Server started on port 1213. Endpoints are configured.");
     }
 }
