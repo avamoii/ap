@@ -2,6 +2,8 @@ package org.example.model;
 
 import jakarta.persistence.*;
 import org.example.enums.UserRole;
+import org.example.enums.UserStatus; // 1. ایمپورت کردن Enum جدید
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,33 +17,47 @@ public class User {
 
     @Column(nullable = false)
     private String firstName;
+
     @Column(nullable = false)
     private String lastName;
+
     @Column(nullable = false, unique = true)
     private String phoneNumber;
+
     @Column(nullable = false)
     private String password;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
+
     private String address;
+
     @Column(unique = true)
     private String email;
+
     @Lob
     private String profileImageBase64;
+
     @Embedded
     private BankInfo bankInfo;
 
-    // A user can have many favorite restaurants.
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "user_favorite_restaurants", // Name of the intermediate table
+            name = "user_favorite_restaurants",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "restaurant_id")
     )
     private List<Restaurant> favoriteRestaurants = new ArrayList<>();
+
     @Column(nullable = false, columnDefinition = "INTEGER DEFAULT 0")
     private Integer walletBalance = 0;
+
+    // 2. اضافه کردن فیلد جدید برای وضعیت تایید کاربر
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserStatus status = UserStatus.PENDING; // مقدار پیش‌فرض PENDING است
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -67,4 +83,13 @@ public class User {
     public void setFavoriteRestaurants(List<Restaurant> favoriteRestaurants) { this.favoriteRestaurants = favoriteRestaurants; }
     public Integer getWalletBalance() { return walletBalance; }
     public void setWalletBalance(Integer walletBalance) { this.walletBalance = walletBalance; }
+
+    // 3. اضافه کردن Getter و Setter برای فیلد جدید
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(UserStatus status) {
+        this.status = status;
+    }
 }
