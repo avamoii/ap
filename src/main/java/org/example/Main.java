@@ -8,6 +8,7 @@ import io.jsonwebtoken.Claims;
 import org.example.actions.auth.*;
 import org.example.actions.buyer.*;
 import org.example.actions.restaurant.*;
+import org.example.actions.transaction.*;
 import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.*;
@@ -47,6 +48,8 @@ public class Main {
         OrderRepository orderRepository = new OrderRepositoryImpl();
         CouponRepository couponRepository = new CouponRepositoryImpl();
         RatingRepository ratingRepository = new RatingRepositoryImpl();
+        TransactionRepository transactionRepository = new TransactionRepositoryImpl();
+
 
         // --- Global Filters & Exception Handlers ---
         before((request, response) -> {
@@ -65,7 +68,7 @@ public class Main {
             }
 
             // A single, unified check for all protected routes
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")||(path.startsWith("/delivery"))) {
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")||(path.startsWith("/delivery"))||(path.startsWith("/tarnsactions"))){
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -137,6 +140,8 @@ public class Main {
         get("/delivery/available", new GetAvailableDeliveriesAction(gson, orderRepository));
         patch("/delivery/:order_id", new UpdateDeliveryStatusAction(gson, orderRepository, userRepository));
         get("/delivery/:history", new GetDeliveryHistoryAction(gson, orderRepository));
+        // --- Transaction Endpoints ---
+        get("/transactions", new GetTransactionHistoryAction(gson, transactionRepository));
 
 
         System.out.println("Server started on port 1213. Endpoints are configured.");
