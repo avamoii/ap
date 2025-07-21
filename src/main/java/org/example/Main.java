@@ -14,6 +14,7 @@ import org.example.repository.*;
 import org.example.util.JwtUtil;
 import org.example.actions.buyer.GetItemDetailsAction;
 import org.example.repository.RatingRepository;
+import org.example.actions.courier.*;
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -64,7 +65,7 @@ public class Main {
             }
 
             // A single, unified check for all protected routes
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")) {
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings")||(path.startsWith("/courier"))) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -132,7 +133,9 @@ public class Main {
         get("/ratings/:id", new GetRatingDetailsAction(gson, ratingRepository));
         delete("/ratings/:id", new DeleteRatingAction(gson, ratingRepository));
         put("/ratings/:id", new UpdateRatingAction(gson, ratingRepository));
-
+        // --- Courier Endpoints ---
+        get("/deliveries/available", new GetAvailableDeliveriesAction(gson, orderRepository));
+        patch("/deliveries/:order_id", new UpdateDeliveryStatusAction(gson, orderRepository, userRepository));;
 
 
         System.out.println("Server started on port 1234. Endpoints are configured.");

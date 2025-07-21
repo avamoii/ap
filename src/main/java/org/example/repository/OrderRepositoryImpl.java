@@ -69,7 +69,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                 // Initialize all required associations to prevent LazyInitializationException
                 Hibernate.initialize(order.getCustomer());
                 Hibernate.initialize(order.getRestaurant());
-                Hibernate.initialize(order.getRestaurant().getOwner()); // Crucial for seller check
+                Hibernate.initialize(order.getRestaurant().getOwner());
                 Hibernate.initialize(order.getItems());
                 if (order.getCourier() != null) {
                     Hibernate.initialize(order.getCourier());
@@ -144,6 +144,18 @@ public class OrderRepositoryImpl implements OrderRepository {
             return query.list();
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findByCustomerIdWithFilters", e);
+            return new ArrayList<>();
+        }
+    }
+    @Override
+    public List<Order> findByStatus(OrderStatus status) {
+        logger.debug("Finding all orders with status: {}", status);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Order> query = session.createQuery("FROM Order WHERE status = :status", Order.class);
+            query.setParameter("status", status);
+            return query.list();
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findByStatus for status {}", status, e);
             return new ArrayList<>();
         }
     }

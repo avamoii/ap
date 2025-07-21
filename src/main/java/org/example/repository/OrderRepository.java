@@ -4,6 +4,7 @@ import org.example.model.Order;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.example.enums.OrderStatus;
 
 public interface OrderRepository {
     List<Order> findByRestaurantIdWithFilters(Long restaurantId, Map<String, String[]> filters);
@@ -11,4 +12,5 @@ public interface OrderRepository {
     Order update(Order order);
     Order save(Order order);
     List<Order> findByCustomerIdWithFilters(Long customerId, Map<String, String[]> filters);
+    List<Order> findByStatus(OrderStatus status);
 }
