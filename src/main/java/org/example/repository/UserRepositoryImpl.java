@@ -9,7 +9,7 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
+import java.util.*;
 
 public class UserRepositoryImpl implements UserRepository {
 
@@ -93,6 +93,17 @@ public class UserRepositoryImpl implements UserRepository {
             if (transaction != null) transaction.rollback();
             logger.error("CRITICAL ERROR in update method for user ID {}", user.getId(), e);
             throw new RuntimeException("Could not update user", e);
+        }
+    }
+    @Override
+    public List<User> findAll() {
+        logger.debug("Attempting to find all users");
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<User> query = session.createQuery("FROM User", User.class);
+            return query.list();
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findAll users", e);
+            return Collections.emptyList();
         }
     }
 }

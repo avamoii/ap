@@ -1,7 +1,7 @@
 package org.example.repository;
 
 import org.example.model.User;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Interface for data access operations on User entities.
@@ -37,4 +37,5 @@ public interface UserRepository {
      */
     Optional<User> findById(Long id);
     User update(User user);
+    List<User> findAll();
 }

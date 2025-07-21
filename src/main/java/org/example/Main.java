@@ -16,6 +16,7 @@ import org.example.config.HibernateUtil;
 import org.example.exception.*;
 import org.example.repository.*;
 import org.example.util.JwtUtil;
+import org.example.actions.admin.*;
 
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -67,7 +68,7 @@ public class Main {
             }
 
             // A single, unified check for all protected routes with correct spelling
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings") || path.startsWith("/deliveries") || path.startsWith("/transactions") || path.startsWith("/wallet")||path.startsWith("/payment")) {
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings") || path.startsWith("/deliveries") || path.startsWith("/transactions") || path.startsWith("/wallet")||path.startsWith("/payment")|| path.startsWith("/admin")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -144,6 +145,8 @@ public class Main {
         get("/transactions", new GetTransactionHistoryAction(gson, transactionRepository));
         post("/wallet/top-up", new TopUpWalletAction(gson, userRepository, transactionRepository));
         post("/payment/online", new MakePaymentAction(gson, orderRepository, userRepository, transactionRepository));
+        //--- Admin Endpoints ---
+        get("/admin/users", new ListUsersAdminAction(gson, userRepository));
         System.out.println("Server started on port 1214. Endpoints are configured.");
     }
 }
