@@ -162,7 +162,15 @@ public class OrderRepositoryImpl implements OrderRepository {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<Order> query = session.createQuery("FROM Order WHERE status = :status", Order.class);
             query.setParameter("status", status);
-            return query.list();
+            List<Order> orders = query.list();
+
+            // This is crucial to prevent LazyInitializationException in the DTO conversion.
+            // We explicitly initialize the 'items' collection for each order before the session closes.
+            for (Order order : orders) {
+                Hibernate.initialize(order.getItems());
+            }
+
+            return orders;
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findByStatus for status {}", status, e);
             return new ArrayList<>();
@@ -211,42 +219,41 @@ public class OrderRepositoryImpl implements OrderRepository {
             Map<String, Object> parameters = new HashMap<>();
             List<String> conditions = new ArrayList<>();
 
-            // Dynamically add conditions based on filters
+            // Dynamically build the list of conditions
             if (filters.containsKey("status") && filters.get("status")[0] != null && !filters.get("status")[0].isEmpty()) {
                 try {
-                    hql.append(" AND o.status = :status");
+                    conditions.add("o.status = :status");
                     parameters.put("status", OrderStatus.valueOf(filters.get("status")[0].toUpperCase()));
                 } catch (IllegalArgumentException e) {
                     logger.warn("Invalid status value provided in filter: {}", filters.get("status")[0]);
-                    return new ArrayList<>(); // Return empty if status is invalid
+                    return new ArrayList<>();
                 }
             }
             if (filters.containsKey("vendor") && filters.get("vendor")[0] != null && !filters.get("vendor")[0].isEmpty()) {
-                hql.append(" AND lower(r.name) LIKE :vendorName");
+                conditions.add("lower(r.name) LIKE :vendorName");
                 parameters.put("vendorName", "%" + filters.get("vendor")[0].toLowerCase() + "%");
             }
             if (filters.containsKey("customer") && filters.get("customer")[0] != null && !filters.get("customer")[0].isEmpty()) {
-                hql.append(" AND lower(c.firstName || ' ' || c.lastName) LIKE :customerName");
+                conditions.add("lower(c.firstName || ' ' || c.lastName) LIKE :customerName");
                 parameters.put("customerName", "%" + filters.get("customer")[0].toLowerCase() + "%");
             }
             if (filters.containsKey("courier") && filters.get("courier")[0] != null && !filters.get("courier")[0].isEmpty()) {
-                hql.append(" AND lower(co.firstName || ' ' || co.lastName) LIKE :courierName");
+                conditions.add("lower(co.firstName || ' ' || co.lastName) LIKE :courierName");
                 parameters.put("courierName", "%" + filters.get("courier")[0].toLowerCase() + "%");
             }
             if (filters.containsKey("search") && filters.get("search")[0] != null && !filters.get("search")[0].isEmpty()) {
-                hql.append(" AND (lower(r.name) LIKE :search OR lower(c.firstName || ' ' || c.lastName) LIKE :search)");
+                conditions.add("(lower(r.name) LIKE :search OR lower(c.firstName || ' ' || c.lastName) LIKE :search)");
                 parameters.put("search", "%" + filters.get("search")[0].toLowerCase() + "%");
             }
 
-            // Append WHERE clause if any conditions exist
+            // Append WHERE clause only if there are conditions to apply
             if (!conditions.isEmpty()) {
-                // Replace the first " AND" with " WHERE"
-                hql.replace(hql.indexOf(" AND"), hql.indexOf(" AND") + 4, " WHERE");
+                hql.append(" WHERE ").append(String.join(" AND ", conditions));
             }
 
-            hql.append(" ORDER BY o.createdAt DESC"); // Show the most recent orders first
+            hql.append(" ORDER BY o.createdAt DESC");
 
-            Query<Order> query = session.createQuery(hql.toString().replace("WHERE AND", "WHERE"), Order.class);
+            Query<Order> query = session.createQuery(hql.toString(), Order.class);
             parameters.forEach(query::setParameter);
 
             return query.list();
