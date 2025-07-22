@@ -80,4 +80,19 @@ public class CouponRepositoryImpl implements CouponRepository {
             throw new RuntimeException("Could not save coupon", e);
         }
     }
+    @Override
+    public void delete(Coupon coupon) {
+        logger.debug("Attempting to delete coupon with ID: {}", coupon.getId());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.remove(coupon);
+            transaction.commit();
+            logger.info("SUCCESS: Coupon with ID {} deleted.", coupon.getId());
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            logger.error("CRITICAL ERROR in delete method for coupon ID {}", coupon.getId(), e);
+            throw new RuntimeException("Could not delete coupon", e);
+        }
+    }
 }
