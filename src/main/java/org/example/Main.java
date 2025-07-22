@@ -149,6 +149,7 @@ public class Main {
         get("/admin/users", new ListUsersAdminAction(gson, userRepository));
         patch("/admin/users/:id/status", new UpdateUserStatusAction(gson, userRepository));
         get("/admin/orders", new ListOrdersAdminAction(gson, orderRepository));
+        get("/admin/transactions", new ListTransactionsAdminAction(gson, transactionRepository));
         System.out.println("Server started on port 1214. Endpoints are configured.");
     }
 }

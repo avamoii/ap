@@ -6,9 +6,10 @@ import org.hibernate.Session;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.example.enums.TransactionType;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class TransactionRepositoryImpl implements TransactionRepository {
 
@@ -47,6 +48,47 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             }
             logger.error("CRITICAL ERROR in save method for transaction", e);
             throw new RuntimeException("Could not save transaction", e);
+        }
+    }
+    @Override
+    public List<Transaction> findAllWithFilters(Map<String, String[]> filters) {
+        logger.debug("Finding all transactions with filters: {}", filters);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Start with the base query and a necessary join to filter by user
+            StringBuilder hql = new StringBuilder("SELECT t FROM Transaction t JOIN t.user u");
+            Map<String, Object> parameters = new HashMap<>();
+            List<String> conditions = new ArrayList<>();
+
+            // Dynamically build the conditions list
+            if (filters.containsKey("user") && filters.get("user")[0] != null && !filters.get("user")[0].isEmpty()) {
+                conditions.add("lower(u.firstName || ' ' || u.lastName) LIKE :userName");
+                parameters.put("userName", "%" + filters.get("user")[0].toLowerCase() + "%");
+            }
+            if (filters.containsKey("method") && filters.get("method")[0] != null && !filters.get("method")[0].isEmpty()) {
+                try {
+                    conditions.add("t.type = :type");
+                    parameters.put("type", TransactionType.valueOf(filters.get("method")[0].toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Invalid transaction type provided in filter: {}", filters.get("method")[0]);
+                    return new ArrayList<>(); // Return empty if type is invalid
+                }
+            }
+            // Add other filters like 'search' or 'status' here if needed
+
+            // Append WHERE clause only if there are conditions to apply
+            if (!conditions.isEmpty()) {
+                hql.append(" WHERE ").append(String.join(" AND ", conditions));
+            }
+
+            hql.append(" ORDER BY t.createdAt DESC"); // Show the most recent transactions first
+
+            Query<Transaction> query = session.createQuery(hql.toString(), Transaction.class);
+            parameters.forEach(query::setParameter);
+
+            return query.list();
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findAllWithFilters for transactions", e);
+            return new ArrayList<>();
         }
     }
 }
