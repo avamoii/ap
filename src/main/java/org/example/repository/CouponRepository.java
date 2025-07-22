@@ -1,7 +1,7 @@
 package org.example.repository;
 
 import org.example.model.Coupon;
-import java.util.Optional;
+import java.util.*;
 
 public interface CouponRepository {
     /**
@@ -24,4 +24,5 @@ public interface CouponRepository {
      * @return The updated coupon entity.
      */
     Coupon update(Coupon coupon);
+    List<Coupon> findAll();
 }

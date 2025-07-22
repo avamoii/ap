@@ -8,7 +8,7 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
+import java.util.*;
 
 public class CouponRepositoryImpl implements CouponRepository {
 
@@ -51,6 +51,17 @@ public class CouponRepositoryImpl implements CouponRepository {
             if (transaction != null) transaction.rollback();
             logger.error("CRITICAL ERROR in update method for coupon ID {}", coupon.getId(), e);
             throw new RuntimeException("Could not update coupon", e);
+        }
+    }
+    @Override
+    public List<Coupon> findAll() {
+        logger.debug("Attempting to find all coupons");
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Coupon> query = session.createQuery("FROM Coupon", Coupon.class);
+            return query.list();
+        } catch (Exception e) {
+            logger.error("CRITICAL ERROR in findAll coupons", e);
+            return Collections.emptyList();
         }
     }
 }
