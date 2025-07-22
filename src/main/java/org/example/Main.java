@@ -154,6 +154,7 @@ public class Main {
         post("/admin/coupons", new CreateCouponAction(gson, couponRepository));
         delete("/admin/coupons/:id", new DeleteCouponAction(gson, couponRepository));
         put("/admin/coupons/:id", new UpdateCouponAction(gson, couponRepository));
+        get("/admin/coupons/:id", new GetCouponDetailsAdminAction(gson, couponRepository));
 
         System.out.println("Server started on port 1214. Endpoints are configured.");
     }
