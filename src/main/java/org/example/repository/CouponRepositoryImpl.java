@@ -64,4 +64,20 @@ public class CouponRepositoryImpl implements CouponRepository {
             return Collections.emptyList();
         }
     }
+    @Override
+    public Coupon save(Coupon coupon) {
+        logger.debug("Attempting to save coupon with code: {}", coupon.getCouponCode());
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(coupon);
+            transaction.commit();
+            logger.info("SUCCESS: Coupon saved with ID: {}", coupon.getId());
+            return coupon;
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            logger.error("CRITICAL ERROR in save method for coupon {}", coupon.getCouponCode(), e);
+            throw new RuntimeException("Could not save coupon", e);
+        }
+    }
 }

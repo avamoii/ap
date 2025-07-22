@@ -25,4 +25,5 @@ public interface CouponRepository {
      */
     Coupon update(Coupon coupon);
     List<Coupon> findAll();
+    Coupon save(Coupon coupon);
 }
