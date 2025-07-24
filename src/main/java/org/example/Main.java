@@ -104,7 +104,7 @@ public class Main {
         post("/restaurants", new CreateRestaurantAction(gson, userRepository, restaurantRepository));
         get("/restaurants/mine", new GetMyRestaurantsAction(gson, restaurantRepository));
         put("/restaurants/:id", new UpdateRestaurantAction(gson, restaurantRepository));
-        post("/restaurants/:id/item", new AddFoodItemAction(gson, restaurantRepository, foodItemRepository));
+        post("/restaurants/:id/menu/:title/item", new AddFoodItemAction(gson, restaurantRepository, foodItemRepository, menuRepository));
         put("/restaurants/:id/item/:item_id", new UpdateFoodItemAction(gson, foodItemRepository));
         delete("/restaurants/:id/item/:item_id", new DeleteFoodItemAction(gson, foodItemRepository));
         post("/restaurants/:id/menu", new CreateMenuAction(gson, restaurantRepository, menuRepository));
