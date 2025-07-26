@@ -12,9 +12,10 @@ public class Rating {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // A rating is for a specific food item.
+    // --- تغییر اصلی: این اتصال دیگر اجباری نیست ---
+    // یک نظر می‌تواند به یک آیتم خاص یا به کل سفارش (بدون آیتم خاص) مرتبط باشد.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "food_item_id", nullable = false)
+    @JoinColumn(name = "food_item_id", nullable = true) // nullable از false به true تغییر کرد
     private FoodItem foodItem;
 
     // The order this rating is associated with.

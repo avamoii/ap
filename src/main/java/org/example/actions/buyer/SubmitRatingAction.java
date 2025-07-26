@@ -9,7 +9,6 @@ import org.example.exception.NotFoundException;
 import org.example.exception.ResourceConflictException;
 import org.example.model.Order;
 import org.example.model.Rating;
-import org.example.model.User;
 import org.example.repository.OrderRepository;
 import org.example.repository.RatingRepository;
 import spark.Request;
@@ -35,7 +34,7 @@ public class SubmitRatingAction implements Route {
         Long userIdFromToken = request.attribute("userId");
         SubmitRatingRequest ratingRequest = gson.fromJson(request.body(), SubmitRatingRequest.class);
 
-        // ۱. اعتبارسنجی ورودی (برای خطای 400)
+        // ۱. اعتبارسنجی ورودی
         if (ratingRequest.getOrderId() == null || ratingRequest.getRating() == null || ratingRequest.getComment() == null) {
             throw new InvalidInputException("Missing required fields: orderId, rating, and comment are required.");
         }
@@ -43,21 +42,21 @@ public class SubmitRatingAction implements Route {
             throw new InvalidInputException("Rating must be between 1 and 5.");
         }
 
-        // ۲. پیدا کردن سفارش (برای خطای 404)
+        // ۲. پیدا کردن سفارش
         Order order = orderRepository.findById(ratingRequest.getOrderId())
                 .orElseThrow(() -> new NotFoundException("Order not found."));
 
-        // ۳. بررسی مالکیت سفارش (برای خطای 403)
+        // ۳. بررسی مالکیت سفارش
         if (!order.getCustomer().getId().equals(userIdFromToken)) {
             throw new ForbiddenException("Access denied. You can only rate your own orders.");
         }
 
-        // ۴. بررسی وضعیت سفارش (برای خطای 409)
+        // ۴. بررسی وضعیت سفارش
         if (order.getStatus() != OrderStatus.COMPLETED) {
             throw new ResourceConflictException("You can only rate completed orders.");
         }
 
-        // ۵. بررسی تکراری بودن امتیاز (برای خطای 409)
+        // ۵. بررسی تکراری بودن امتیاز
         ratingRepository.findByOrderId(order.getId()).ifPresent(r -> {
             throw new ResourceConflictException("A rating for this order has already been submitted.");
         });
@@ -75,7 +74,6 @@ public class SubmitRatingAction implements Route {
 
         // ۷. ارسال پاسخ موفقیت‌آمیز
         response.status(200);
-        // طبق API، بدنه پاسخ خالی است، اما می‌توان یک پیام موفقیت هم برگرداند
-        return "";
+        return ""; // طبق API، بدنه پاسخ خالی است
     }
 }

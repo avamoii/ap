@@ -2,6 +2,7 @@ package org.example.repository;
 
 import org.example.config.HibernateUtil;
 import org.example.model.Transaction;
+import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
@@ -23,11 +24,22 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                     "FROM Transaction WHERE user.id = :userId ORDER BY createdAt DESC", Transaction.class);
             query.setParameter("userId", userId);
             List<Transaction> transactions = query.list();
+
+            // --- تغییر اصلی اینجاست ---
+            // قبل از بستن session، تمام اطلاعات لازم را به صورت دستی بارگذاری می‌کنیم
+            for (Transaction transaction : transactions) {
+                Hibernate.initialize(transaction.getUser());
+                if (transaction.getOrder() != null) {
+                    Hibernate.initialize(transaction.getOrder());
+                }
+            }
+
             logger.info("Found {} transactions for user ID: {}", transactions.size(), userId);
             return transactions;
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findByUserId for user ID {}", userId, e);
-            return new ArrayList<>();
+            // پرتاب کردن خطا به لایه بالاتر تا پاسخ 500 به فرانت ارسال شود
+            throw new RuntimeException("Could not fetch transaction history", e);
         }
     }
 
@@ -73,9 +85,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                     return new ArrayList<>(); // Return empty if type is invalid
                 }
             }
-            // Add other filters like 'search' or 'status' here if needed
 
-            // Append WHERE clause only if there are conditions to apply
             if (!conditions.isEmpty()) {
                 hql.append(" WHERE ").append(String.join(" AND ", conditions));
             }
