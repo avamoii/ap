@@ -41,15 +41,10 @@ public class ListUsersAdminAction implements Route {
         List<User> users = userRepository.findAll();
 
         // 3. Convert the list of User entities to a list of UserDTOs to avoid exposing sensitive data.
+        // --- تغییر اصلی اینجاست ---
+        // از سازنده جدید UserDTO استفاده می‌کنیم
         List<UserDTO> userDTOs = users.stream()
-                .map(user -> new UserDTO(
-                        user.getId(),
-                        user.getFirstName(),
-                        user.getLastName(),
-                        user.getPhoneNumber(),
-                        user.getRole(),
-                        user.getAddress()
-                ))
+                .map(UserDTO::new) // به جای new UserDTO(user.getId(), ...)
                 .collect(Collectors.toList());
 
         // 4. Send the successful response.

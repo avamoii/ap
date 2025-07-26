@@ -31,36 +31,31 @@ public class RegisterUserAction implements Route {
         response.type("application/json");
         RegisterRequest registerRequest = gson.fromJson(request.body(), RegisterRequest.class);
 
-        // 400 - اعتبارسنجی برای فیلد جدید
-        if (registerRequest.getFullName() == null || registerRequest.getPhone() == null || // <--- تغییر
+        if (registerRequest.getFullName() == null || registerRequest.getPhone() == null ||
                 registerRequest.getPassword() == null || registerRequest.getRole() == null) {
             throw new InvalidInputException("Missing required fields");
         }
 
-        // 409
         Optional<User> existingUser = userRepository.findByPhoneNumber(registerRequest.getPhone());
         if (existingUser.isPresent()) {
             throw new ResourceConflictException("Phone number already exists");
         }
 
-        // 409 - اعتبارسنجی برای ایمیل
-        Optional<User> existingEmailUser = userRepository.findByEmail(registerRequest.getEmail());
-        if (existingEmailUser.isPresent()) {
-            throw new ResourceConflictException("Email already exists");
+        if (registerRequest.getEmail() != null && !registerRequest.getEmail().isEmpty()) {
+            Optional<User> existingEmailUser = userRepository.findByEmail(registerRequest.getEmail());
+            if (existingEmailUser.isPresent()) {
+                throw new ResourceConflictException("Email already exists");
+            }
         }
 
-        // ساختن کاربر جدید
         User newUser = new User();
-
-        // <--- تغییر: تفکیک کردن نام کامل به نام کوچک و بزرگ --->
         String fullName = registerRequest.getFullName();
-        String[] names = fullName.trim().split("\\s+", 2); // بر اساس اولین فاصله، به حداکثر دو بخش تقسیم می‌کند
+        String[] names = fullName.trim().split("\\s+", 2);
         String firstName = names.length > 0 ? names[0] : "";
         String lastName = names.length > 1 ? names[1] : "";
 
         newUser.setFirstName(firstName);
         newUser.setLastName(lastName);
-
         newUser.setPhoneNumber(registerRequest.getPhone());
         newUser.setRole(registerRequest.getRole());
         newUser.setAddress(registerRequest.getAddress());
@@ -68,7 +63,6 @@ public class RegisterUserAction implements Route {
         newUser.setEmail(registerRequest.getEmail());
         newUser.setProfileImageBase64(registerRequest.getProfileImageBase64());
 
-        // تبدیل BankInfoDTO به BankInfo Entity
         if (registerRequest.getBankInfo() != null) {
             BankInfo bankInfo = new BankInfo();
             bankInfo.setBankName(registerRequest.getBankInfo().getBankName());
@@ -76,21 +70,18 @@ public class RegisterUserAction implements Route {
             newUser.setBankInfo(bankInfo);
         }
 
-        // ذخیره کاربر جدید از طریق ریپازیتوری
         User savedUser = userRepository.save(newUser);
 
-        // ساختن توکن و پاسخ نهایی
         String token = JwtUtil.generateToken(savedUser.getId(), savedUser.getRole().toString());
         response.status(200);
 
-        UserDTO userDto = new UserDTO(
-                savedUser.getId(), savedUser.getFirstName(), savedUser.getLastName(),
-                savedUser.getPhoneNumber(), savedUser.getRole(), savedUser.getAddress()
-        );
+        // --- تغییر اصلی اینجاست ---
+        // از سازنده جدید UserDTO استفاده می‌کنیم که فقط آبجکت User را می‌گیرد
+        UserDTO userDto = new UserDTO(savedUser);
+
         Map<String, Object> responseData = new HashMap<>();
         responseData.put("user", userDto);
         responseData.put("token", token);
         return gson.toJson(responseData);
     }
-
 }

@@ -31,7 +31,6 @@ public class LoginUserAction implements Route {
         response.type("application/json");
         LoginRequest loginRequest = gson.fromJson(request.body(), LoginRequest.class);
 
-        //400
         if (loginRequest.getPhone() == null || loginRequest.getPhone().trim().isEmpty()) {
             throw new InvalidInputException("Invalid `phone`");
         }
@@ -39,32 +38,22 @@ public class LoginUserAction implements Route {
             throw new InvalidInputException("Invalid `password`");
         }
 
-        // ۲. پیدا کردن کاربر از طریق ریپازیتوری
         Optional<User> userOptional = userRepository.findByPhoneNumber(loginRequest.getPhone());
 
-        // ===> ۳. تفکیک خطای 404 از 401 <===
-        // اگر کاربر وجود نداشت، خطای 404 پرتاب کن
         if (userOptional.isEmpty()) {
             throw new NotFoundException("User with this phone number not found");
         }
 
-        // حالا که مطمئنیم کاربر وجود دارد، آن را از Optional خارج می‌کنیم
         User user = userOptional.get();
 
-        // اگر رمز عبور اشتباه بود، خطای 401 پرتاب کن
         if (!user.getPassword().equals(loginRequest.getPassword())) {
             throw new UnauthorizedException("Invalid password");
         }
         String token = JwtUtil.generateToken(user.getId(), user.getRole().toString());
 
-        UserDTO userDto = new UserDTO(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getPhoneNumber(),
-                user.getRole(),
-                user.getAddress()
-        );
+        // --- تغییر اصلی اینجاست ---
+        // از سازنده جدید UserDTO استفاده می‌کنیم که فقط آبجکت User را می‌گیرد
+        UserDTO userDto = new UserDTO(user);
 
         Map<String, Object> responseData = new HashMap<>();
         responseData.put("message", "User logged in successfully");
