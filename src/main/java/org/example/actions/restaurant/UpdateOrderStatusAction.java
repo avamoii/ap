@@ -33,39 +33,36 @@ public class UpdateOrderStatusAction implements Route {
         Long ownerIdFromToken = request.attribute("userId");
         UpdateOrderStatusRequest updateRequest = gson.fromJson(request.body(), UpdateOrderStatusRequest.class);
 
-        // ۱. اعتبارسنجی ورودی (برای خطای 400)
         if (updateRequest.getStatus() == null) {
             throw new InvalidInputException("Missing required field: status is required.");
         }
 
-        // ۲. پیدا کردن سفارش (برای خطای 404)
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
 
-        // ۳. بررسی مالکیت (برای خطای 403)
         if (!order.getRestaurant().getOwner().getId().equals(ownerIdFromToken)) {
             throw new ForbiddenException("Access denied. You are not the owner of the restaurant for this order.");
         }
 
-        // ۴. به‌روزرسانی وضعیت سفارش
-        // اینجا وضعیت دریافتی را به وضعیت اصلی سیستم خودمان تبدیل می‌کنیم
+        // --- تغییر اصلی اینجاست ---
+        // منطق به‌روزرسانی وضعیت سفارش اصلاح شد
         switch (updateRequest.getStatus()) {
             case ACCEPTED:
-                order.setStatus(OrderStatus.WAITING_VENDOR);
+                // وقتی سفارش تایید می‌شود، باید به وضعیت "در جستجوی پیک" برود
+                order.setStatus(OrderStatus.FINDING_COURIER);
                 break;
             case REJECTED:
                 order.setStatus(OrderStatus.CANCELLED);
                 break;
             case SERVED:
-                order.setStatus(OrderStatus.FINDING_COURIER); // یا هر وضعیت دیگری که منطقی باشد
+                // این وضعیت به معنی تحویل به پیک است، پس به "در جستجوی پیک" می‌رود
+                order.setStatus(OrderStatus.FINDING_COURIER);
                 break;
         }
         order.setUpdatedAt(LocalDateTime.now());
 
-        // ۵. ذخیره تغییرات
         orderRepository.update(order);
 
-        // ۶. ارسال پاسخ موفقیت‌آمیز
         response.status(200);
         return gson.toJson(Map.of("message", "Order status changed successfully"));
     }
