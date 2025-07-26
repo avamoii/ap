@@ -126,8 +126,9 @@ public class Main {
 
         // --- Order Endpoints ---
         post("/orders", new SubmitOrderAction(gson, userRepository, restaurantRepository, foodItemRepository, orderRepository, couponRepository));
-        get("/orders/:id", new GetOrderDetailsAction(gson, orderRepository));
         get("/orders/history", new GetOrderHistoryAction(gson, orderRepository));
+        get("/orders/:id", new GetOrderDetailsAction(gson, orderRepository));
+
 
         // --- Rating Endpoints ---
         post("/ratings", new SubmitRatingAction(gson, orderRepository, ratingRepository));
