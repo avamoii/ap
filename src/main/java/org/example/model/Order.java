@@ -33,8 +33,12 @@ public class Order {
     @JoinColumn(name = "coupon_id") // Can be null
     private Coupon coupon;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "order_items", joinColumns = @JoinColumn(name = "order_id"), inverseJoinColumns = @JoinColumn(name = "food_item_id"))
+    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinTable(
+            name = "order_items",
+            joinColumns = @JoinColumn(name = "order_id"),
+            inverseJoinColumns = @JoinColumn(name = "food_item_id")
+    )
     private List<FoodItem> items = new ArrayList<>();
 
     private Integer rawPrice;

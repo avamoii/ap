@@ -85,42 +85,46 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public Order save(Order order) {
         logger.debug("Attempting to save order for customer ID: {}", order.getCustomer().getId());
+        Session session = HibernateUtil.getSessionFactory().openSession();
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
             transaction = session.beginTransaction();
-            session.persist(order);
-
-            // This line is crucial to ensure data is written to the DB immediately.
-            session.flush();
-
+            // Using merge instead of persist is safer for entities that might have detached sub-entities (like FoodItem)
+            Order mergedOrder = session.merge(order);
             transaction.commit();
-            logger.info("SUCCESS: Order saved with ID: {}", order.getId());
-            return order;
+            logger.info("SUCCESS: Order saved with ID: {}", mergedOrder.getId());
+            return mergedOrder;
         } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("CRITICAL ERROR in save method for order", e);
+            // Re-throw the original exception to see the root cause
             throw new RuntimeException("Could not save order", e);
+        } finally {
+            session.close();
         }
     }
 
     @Override
     public Order update(Order order) {
         logger.debug("Attempting to update order with ID: {}", order.getId());
+        Session session = HibernateUtil.getSessionFactory().openSession();
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
             transaction = session.beginTransaction();
             Order updatedOrder = session.merge(order);
-
-            // This line is crucial to ensure data is written to the DB immediately.
-            session.flush();
-
             transaction.commit();
             logger.info("SUCCESS: Order with ID {} updated.", updatedOrder.getId());
             return updatedOrder;
         } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("CRITICAL ERROR in update method for order ID {}", order.getId(), e);
             throw new RuntimeException("Could not update order", e);
+        } finally {
+            session.close();
         }
     }
 
@@ -263,4 +267,3 @@ public class OrderRepositoryImpl implements OrderRepository {
         }
     }
 }
-

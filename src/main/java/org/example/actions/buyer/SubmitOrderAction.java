@@ -62,8 +62,12 @@ public class SubmitOrderAction implements Route {
             if (foodItem.getSupply() < itemRequest.getQuantity()) {
                 throw new ResourceConflictException("Not enough supply for item: " + foodItem.getName());
             }
+            // کاهش موجودی فقط در حافظه (در memory) انجام می‌شود
             foodItem.setSupply(foodItem.getSupply() - itemRequest.getQuantity());
-            foodItemRepository.update(foodItem);
+
+            // ===> این خط حذف می‌شود تا از Cascade استفاده کنیم <===
+            // foodItemRepository.update(foodItem);
+
             rawPrice = rawPrice.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
             foodItemsForOrder.add(foodItem);
         }
@@ -75,7 +79,29 @@ public class SubmitOrderAction implements Route {
         if (orderRequest.getCouponId() != null) {
             appliedCoupon = couponRepository.findById(orderRequest.getCouponId())
                     .orElseThrow(() -> new NotFoundException("Coupon not found."));
-            // ... (منطق اعتبارسنجی و اعمال تخفیف کوپن) ...
+
+            // اعتبارسنجی و اعمال تخفیف کوپن
+            if (appliedCoupon.getMinPrice() != null && finalPrice.intValue() < appliedCoupon.getMinPrice()) {
+                throw new InvalidInputException("Order total is less than the coupon's minimum price.");
+            }
+            if (appliedCoupon.getEndDate() != null && LocalDate.now().isAfter(appliedCoupon.getEndDate())) {
+                throw new InvalidInputException("Coupon has expired.");
+            }
+            if (appliedCoupon.getUserCount() != null && appliedCoupon.getUserCount() <= 0) {
+                throw new InvalidInputException("Coupon usage limit has been reached.");
+            }
+
+            if (appliedCoupon.getType() == CouponType.FIXED) {
+                finalPrice = finalPrice.subtract(appliedCoupon.getValue());
+            } else if (appliedCoupon.getType() == CouponType.PERCENT) {
+                BigDecimal discountAmount = finalPrice.multiply(appliedCoupon.getValue()).divide(new BigDecimal(100));
+                finalPrice = finalPrice.subtract(discountAmount);
+            }
+
+            if (appliedCoupon.getUserCount() != null) {
+                appliedCoupon.setUserCount(appliedCoupon.getUserCount() - 1);
+                couponRepository.update(appliedCoupon);
+            }
         }
 
         // ۵. اضافه کردن هزینه‌های رستوران
@@ -90,7 +116,7 @@ public class SubmitOrderAction implements Route {
         Order newOrder = new Order();
         newOrder.setCustomer(customer);
         newOrder.setRestaurant(restaurant);
-        newOrder.setItems(foodItemsForOrder);
+        newOrder.setItems(foodItemsForOrder); // <-- لیست آیتم‌های تغییر کرده به سفارش اضافه می‌شود
         newOrder.setDeliveryAddress(orderRequest.getDeliveryAddress());
         newOrder.setStatus(OrderStatus.SUBMITTED);
         newOrder.setRawPrice(rawPrice.intValue());
@@ -102,6 +128,8 @@ public class SubmitOrderAction implements Route {
             newOrder.setCoupon(appliedCoupon);
         }
 
+        // وقتی این خط اجرا می‌شود، هایبرنیت به صورت خودکار هم سفارش جدید را INSERT می‌کند
+        // و هم تمام آیتم‌های غذایی تغییر کرده را UPDATE می‌کند، همه در یک تراکنش واحد.
         Order savedOrder = orderRepository.save(newOrder);
 
         // ۷. ارسال پاسخ موفقیت‌آمیز
