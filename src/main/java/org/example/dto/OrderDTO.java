@@ -1,5 +1,6 @@
 package org.example.dto;
 
+import com.google.gson.annotations.SerializedName;
 import org.example.enums.OrderStatus;
 import org.example.model.FoodItem;
 import org.example.model.Order;
@@ -24,6 +25,11 @@ public class OrderDTO {
     private String createdAt;
     private String updatedAt;
 
+    // --- فیلد جدید برای شناسه نظر ---
+    @SerializedName("rating_id")
+    private Long ratingId;
+
+
     public OrderDTO(Order order) {
         this.id = order.getId();
         this.deliveryAddress = order.getDeliveryAddress();
@@ -46,6 +52,11 @@ public class OrderDTO {
         if (order.getUpdatedAt() != null) {
             this.updatedAt = order.getUpdatedAt().format(DateTimeFormatter.ISO_DATE_TIME);
         }
+        // --- مقداردهی فیلد جدید ---
+        //  (برای این کار باید یک رابطه یک به یک بین Order و Rating ایجاد کنیم)
+        // if (order.getRating() != null) {
+        //     this.ratingId = order.getRating().getId();
+        // }
     }
 
     // Getters
@@ -64,4 +75,7 @@ public class OrderDTO {
     public OrderStatus getStatus() { return status; }
     public String getCreatedAt() { return createdAt; }
     public String getUpdatedAt() { return updatedAt; }
+
+    // Getter برای فیلد جدید
+    public Long getRatingId() { return ratingId; }
 }

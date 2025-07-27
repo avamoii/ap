@@ -26,7 +26,7 @@ import static spark.Spark.*;
 public class Main {
     public static void main(String[] args) {
         // --- Server Configuration & Dependency Injection ---
-        port(1215); // Using your specified port
+        port(1216); // Using your specified port
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));

@@ -22,7 +22,8 @@ public class OrderRepositoryImpl implements OrderRepository {
     public List<Order> findByRestaurantIdWithFilters(Long restaurantId, Map<String, String[]> filters) {
         logger.debug("Finding orders for restaurant ID: {} with filters", restaurantId);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            StringBuilder hql = new StringBuilder("SELECT o FROM Order o JOIN o.customer c WHERE o.restaurant.id = :restaurantId");
+            // --- تغییر: افزودن LEFT JOIN FETCH o.rating ---
+            StringBuilder hql = new StringBuilder("SELECT DISTINCT o FROM Order o JOIN o.customer c LEFT JOIN FETCH o.rating WHERE o.restaurant.id = :restaurantId");
             Map<String, Object> parameters = new java.util.HashMap<>();
             parameters.put("restaurantId", restaurantId);
 
@@ -70,6 +71,10 @@ public class OrderRepositoryImpl implements OrderRepository {
                 Hibernate.initialize(order.getItems());
                 if (order.getCourier() != null) {
                     Hibernate.initialize(order.getCourier());
+                }
+                // اطمینان از واکشی نظر (برای این متد ضروری است)
+                if (order.getRating() != null) {
+                    Hibernate.initialize(order.getRating());
                 }
             }
             return Optional.ofNullable(order);
@@ -131,7 +136,8 @@ public class OrderRepositoryImpl implements OrderRepository {
     public List<Order> findByCustomerIdWithFilters(Long customerId, Map<String, String[]> filters) {
         logger.debug("Finding order history for customer ID: {} with filters", customerId);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            StringBuilder hql = new StringBuilder("SELECT o FROM Order o JOIN o.restaurant r WHERE o.customer.id = :customerId");
+            // --- تغییر: افزودن LEFT JOIN FETCH o.rating ---
+            StringBuilder hql = new StringBuilder("SELECT DISTINCT o FROM Order o JOIN o.restaurant r LEFT JOIN FETCH o.rating WHERE o.customer.id = :customerId");
             Map<String, Object> parameters = new java.util.HashMap<>();
             parameters.put("customerId", customerId);
 
@@ -150,13 +156,12 @@ public class OrderRepositoryImpl implements OrderRepository {
             Query<Order> query = session.createQuery(hql.toString(), Order.class);
             parameters.forEach(query::setParameter);
 
+            // با وجود FETCH، دیگر نیازی به initialize دستی نیست، اما برای اطمینان نگه می‌داریم
             List<Order> orders = query.list();
-            // --- تغییر اصلی اینجاست ---
-            // قبل از بستن session، تمام اطلاعات لازم را به صورت دستی بارگذاری می‌کنیم
             for (Order order : orders) {
+                Hibernate.initialize(order.getItems());
                 Hibernate.initialize(order.getCustomer());
                 Hibernate.initialize(order.getRestaurant());
-                Hibernate.initialize(order.getItems());
                 if (order.getCourier() != null) {
                     Hibernate.initialize(order.getCourier());
                 }
@@ -167,7 +172,6 @@ public class OrderRepositoryImpl implements OrderRepository {
             return orders;
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findByCustomerIdWithFilters", e);
-            // پرتاب کردن خطا به لایه بالاتر تا پاسخ 500 به فرانت ارسال شود
             throw new RuntimeException("Could not fetch order history", e);
         }
     }
@@ -175,7 +179,8 @@ public class OrderRepositoryImpl implements OrderRepository {
     public List<Order> findByStatus(OrderStatus status) {
         logger.debug("Finding all orders with status: {}", status);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Order> query = session.createQuery("FROM Order WHERE status = :status", Order.class);
+            // --- تغییر: افزودن LEFT JOIN FETCH o.rating ---
+            Query<Order> query = session.createQuery("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.rating WHERE o.status = :status", Order.class);
             query.setParameter("status", status);
             List<Order> orders = query.list();
 
@@ -193,7 +198,8 @@ public class OrderRepositoryImpl implements OrderRepository {
     public List<Order> findByCourierIdWithFilters(Long courierId, Map<String, String[]> filters) {
         logger.debug("Finding delivery history for courier ID: {} with filters", courierId);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            StringBuilder hql = new StringBuilder("SELECT o FROM Order o JOIN o.restaurant r JOIN o.customer c WHERE o.courier.id = :courierId");
+            // --- تغییر: افزودن LEFT JOIN FETCH o.rating ---
+            StringBuilder hql = new StringBuilder("SELECT DISTINCT o FROM Order o JOIN o.restaurant r JOIN o.customer c LEFT JOIN FETCH o.rating WHERE o.courier.id = :courierId");
             Map<String, Object> parameters = new java.util.HashMap<>();
             parameters.put("courierId", courierId);
 
@@ -229,7 +235,8 @@ public class OrderRepositoryImpl implements OrderRepository {
     public List<Order> findAllWithFilters(Map<String, String[]> filters) {
         logger.debug("Finding all orders with filters: {}", filters);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            StringBuilder hql = new StringBuilder("SELECT o FROM Order o JOIN o.customer c JOIN o.restaurant r LEFT JOIN o.courier co");
+            // --- تغییر: افزودن LEFT JOIN FETCH o.rating ---
+            StringBuilder hql = new StringBuilder("SELECT DISTINCT o FROM Order o JOIN o.customer c JOIN o.restaurant r LEFT JOIN o.courier co LEFT JOIN FETCH o.rating");
             Map<String, Object> parameters = new HashMap<>();
             List<String> conditions = new ArrayList<>();
 

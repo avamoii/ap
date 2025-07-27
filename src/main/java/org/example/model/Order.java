@@ -58,6 +58,12 @@ public class Order {
 
     private LocalDateTime updatedAt;
 
+    // --- تغییر اصلی اینجاست ---
+    // این رابطه به ما اجازه می‌دهد از یک سفارش به نظر مرتبط با آن دسترسی پیدا کنیم
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Rating rating;
+
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -89,4 +95,8 @@ public class Order {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    // --- Getter و Setter برای فیلد جدید ---
+    public Rating getRating() { return rating; }
+    public void setRating(Rating rating) { this.rating = rating; }
 }
