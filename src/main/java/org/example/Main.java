@@ -26,7 +26,7 @@ import static spark.Spark.*;
 public class Main {
     public static void main(String[] args) {
         // --- Server Configuration & Dependency Injection ---
-        port(1215); // Using your specified port
+        port(1214); // Using your specified port
         LogManager.getLogManager().reset();
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
@@ -68,7 +68,11 @@ public class Main {
             }
 
             // A single, unified check for all protected routes with correct spelling
-            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors") || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders") || path.startsWith("/favorites") || path.startsWith("/ratings") || path.startsWith("/deliveries") || path.startsWith("/transactions") || path.startsWith("/wallet")||path.startsWith("/payment")|| path.startsWith("/admin")) {
+            if (path.startsWith("/auth/") || path.startsWith("/restaurants") || path.startsWith("/vendors")
+                    || path.startsWith("/items") || path.startsWith("/coupons") || path.startsWith("/orders")
+                    || path.startsWith("/favorites") || path.startsWith("/ratings") || path.startsWith("/deliveries")
+                    || path.startsWith("/transactions") || path.startsWith("/wallet") || path.startsWith("/payment")
+                    || path.startsWith("/admin")) {
                 String authHeader = request.headers("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw new UnauthorizedException("Unauthorized: Missing or invalid Authorization header");
@@ -89,9 +93,9 @@ public class Main {
         exception(Exception.class, (e, request, response) -> { e.printStackTrace(); response.status(500); response.type("application/json"); response.body(gson.toJson(Map.of("error", "An unexpected internal server error occurred."))); });
 
 
-        //================================================================================================================
+        // ================================================================================================================
         // --- API Routes ---
-        //================================================================================================================
+        // ================================================================================================================
 
         // --- Auth Endpoints ---
         post("/auth/register", new RegisterUserAction(gson, userRepository));
@@ -129,9 +133,8 @@ public class Main {
         get("/orders/history", new GetOrderHistoryAction(gson, orderRepository));
         get("/orders/:id", new GetOrderDetailsAction(gson, orderRepository));
 
-
         // --- Rating Endpoints ---
-        post("/ratings", new SubmitRatingAction(gson, orderRepository, ratingRepository));
+        post("/ratings", new SubmitRatingAction(gson, orderRepository, ratingRepository, foodItemRepository));
         get("/ratings/items/:item_id", new GetItemRatingsAction(gson, ratingRepository));
         get("/ratings/:id", new GetRatingDetailsAction(gson, ratingRepository));
         put("/ratings/:id", new UpdateRatingAction(gson, ratingRepository));
@@ -146,12 +149,12 @@ public class Main {
         get("/transactions", new GetTransactionHistoryAction(gson, transactionRepository));
         post("/wallet/top-up", new TopUpWalletAction(gson, userRepository, transactionRepository));
         post("/payment/online", new MakePaymentAction(gson, orderRepository, userRepository, transactionRepository));
-        //--- Admin Endpoints ---
+        // --- Admin Endpoints ---
         get("/admin/users", new ListUsersAdminAction(gson, userRepository));
         patch("/admin/users/:id/status", new UpdateUserStatusAction(gson, userRepository));
         get("/admin/orders", new ListOrdersAdminAction(gson, orderRepository));
         get("/admin/transactions", new ListTransactionsAdminAction(gson, transactionRepository));
-        get("/admin/coupons",new ListCouponsAdminAction(gson, couponRepository));
+        get("/admin/coupons", new ListCouponsAdminAction(gson, couponRepository));
         post("/admin/coupons", new CreateCouponAction(gson, couponRepository));
         delete("/admin/coupons/:id", new DeleteCouponAction(gson, couponRepository));
         put("/admin/coupons/:id", new UpdateCouponAction(gson, couponRepository));

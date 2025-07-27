@@ -11,7 +11,6 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.util.*;
 
 public class RatingRepositoryImpl implements RatingRepository {
@@ -77,6 +76,7 @@ public class RatingRepositoryImpl implements RatingRepository {
             return Optional.empty();
         }
     }
+
     @Override
     public List<Rating> findByFoodItemId(Long foodItemId) {
         logger.debug("Finding ratings for food item ID: {}", foodItemId);
@@ -97,6 +97,7 @@ public class RatingRepositoryImpl implements RatingRepository {
             return Collections.emptyList();
         }
     }
+
     @Override
     public Optional<Rating> findById(Long id) {
         logger.debug("Attempting to find rating by ID: {}", id);

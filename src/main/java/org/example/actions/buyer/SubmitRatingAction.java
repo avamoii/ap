@@ -7,8 +7,10 @@ import org.example.exception.ForbiddenException;
 import org.example.exception.InvalidInputException;
 import org.example.exception.NotFoundException;
 import org.example.exception.ResourceConflictException;
+import org.example.model.FoodItem;
 import org.example.model.Order;
 import org.example.model.Rating;
+import org.example.repository.FoodItemRepository;
 import org.example.repository.OrderRepository;
 import org.example.repository.RatingRepository;
 import spark.Request;
@@ -21,11 +23,14 @@ public class SubmitRatingAction implements Route {
     private final Gson gson;
     private final OrderRepository orderRepository;
     private final RatingRepository ratingRepository;
+    private final FoodItemRepository foodItemRepository;
 
-    public SubmitRatingAction(Gson gson, OrderRepository orderRepository, RatingRepository ratingRepository) {
+    public SubmitRatingAction(Gson gson, OrderRepository orderRepository, RatingRepository ratingRepository,
+            FoodItemRepository foodItemRepository) {
         this.gson = gson;
         this.orderRepository = orderRepository;
         this.ratingRepository = ratingRepository;
+        this.foodItemRepository = foodItemRepository;
     }
 
     @Override
@@ -69,6 +74,18 @@ public class SubmitRatingAction implements Route {
         newRating.setComment(ratingRequest.getComment());
         newRating.setImageBase64(ratingRequest.getImageBase64());
         newRating.setCreatedAt(LocalDateTime.now());
+
+        if (ratingRequest.getFoodItemId() != null) {
+            FoodItem foodItem = foodItemRepository.findById(ratingRequest.getFoodItemId())
+                    .orElseThrow(() -> new NotFoundException("FoodItem not found."));
+
+            boolean itemInOrder = order.getItems().stream()
+                    .anyMatch(item -> item.getId().equals(foodItem.getId()));
+            if (!itemInOrder) {
+                throw new InvalidInputException("The specified food item is not part of this order.");
+            }
+            newRating.setFoodItem(foodItem);
+        }
 
         ratingRepository.save(newRating);
 
