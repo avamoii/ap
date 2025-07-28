@@ -25,8 +25,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             query.setParameter("userId", userId);
             List<Transaction> transactions = query.list();
 
-            // --- تغییر اصلی اینجاست ---
-            // قبل از بستن session، تمام اطلاعات لازم را به صورت دستی بارگذاری می‌کنیم
+            // این بخش از قبل صحیح است و اطلاعات لازم را واکشی می‌کند
             for (Transaction transaction : transactions) {
                 Hibernate.initialize(transaction.getUser());
                 if (transaction.getOrder() != null) {
@@ -38,7 +37,6 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             return transactions;
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findByUserId for user ID {}", userId, e);
-            // پرتاب کردن خطا به لایه بالاتر تا پاسخ 500 به فرانت ارسال شود
             throw new RuntimeException("Could not fetch transaction history", e);
         }
     }
@@ -66,12 +64,10 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     public List<Transaction> findAllWithFilters(Map<String, String[]> filters) {
         logger.debug("Finding all transactions with filters: {}", filters);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // Start with the base query and a necessary join to filter by user
             StringBuilder hql = new StringBuilder("SELECT t FROM Transaction t JOIN t.user u");
             Map<String, Object> parameters = new HashMap<>();
             List<String> conditions = new ArrayList<>();
 
-            // Dynamically build the conditions list
             if (filters.containsKey("user") && filters.get("user")[0] != null && !filters.get("user")[0].isEmpty()) {
                 conditions.add("lower(u.firstName || ' ' || u.lastName) LIKE :userName");
                 parameters.put("userName", "%" + filters.get("user")[0].toLowerCase() + "%");
@@ -82,7 +78,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                     parameters.put("type", TransactionType.valueOf(filters.get("method")[0].toUpperCase()));
                 } catch (IllegalArgumentException e) {
                     logger.warn("Invalid transaction type provided in filter: {}", filters.get("method")[0]);
-                    return new ArrayList<>(); // Return empty if type is invalid
+                    return new ArrayList<>();
                 }
             }
 
@@ -90,12 +86,20 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 hql.append(" WHERE ").append(String.join(" AND ", conditions));
             }
 
-            hql.append(" ORDER BY t.createdAt DESC"); // Show the most recent transactions first
+            hql.append(" ORDER BY t.createdAt DESC");
 
             Query<Transaction> query = session.createQuery(hql.toString(), Transaction.class);
             parameters.forEach(query::setParameter);
 
-            return query.list();
+            List<Transaction> transactions = query.list();
+
+            // --- **تغییر اصلی اینجاست** ---
+            // قبل از بازگرداندن لیست، اطلاعات کاربر هر تراکنش را به طور کامل بارگذاری می‌کنیم
+            for (Transaction transaction : transactions) {
+                Hibernate.initialize(transaction.getUser());
+            }
+
+            return transactions;
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findAllWithFilters for transactions", e);
             return new ArrayList<>();

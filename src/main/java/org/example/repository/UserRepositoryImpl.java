@@ -1,15 +1,22 @@
 package org.example.repository;
 
+import jakarta.persistence.LockModeType;
 import org.example.config.HibernateUtil;
+import org.example.enums.TransactionType;
+import org.example.model.Order;
 import org.example.model.User;
+// Note: We are deliberately not importing org.example.model.Transaction to avoid naming conflicts
 import org.hibernate.Hibernate;
 import org.hibernate.Session;
-import org.hibernate.Transaction;
+// Note: We are deliberately not importing org.hibernate.Transaction to use the full path
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 public class UserRepositoryImpl implements UserRepository {
 
@@ -47,7 +54,6 @@ public class UserRepositoryImpl implements UserRepository {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             User user = session.get(User.class, id);
             if (user != null) {
-                // Initialize the list of favorite restaurants to prevent LazyInitializationException
                 Hibernate.initialize(user.getFavoriteRestaurants());
                 logger.info("SUCCESS: User found with ID: {}", id);
             } else {
@@ -63,16 +69,17 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public User save(User user) {
         logger.debug("Attempting to save user with phone: '{}'", user.getPhoneNumber());
-        Transaction transaction = null;
+        // --- **FIX: Using the fully qualified name for Hibernate's Transaction** ---
+        org.hibernate.Transaction hibernateTransaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            transaction = session.beginTransaction();
+            hibernateTransaction = session.beginTransaction();
             session.persist(user);
-            session.flush(); // Ensures data is sent to the DB
-            transaction.commit();
+            session.flush();
+            hibernateTransaction.commit();
             logger.info("SUCCESS: User saved with ID: {}", user.getId());
             return user;
         } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
+            if (hibernateTransaction != null) hibernateTransaction.rollback();
             logger.error("CRITICAL ERROR in save method for user", e);
             throw new RuntimeException("Could not save user", e);
         }
@@ -81,16 +88,16 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public User update(User user) {
         logger.debug("Attempting to update user with ID: {}", user.getId());
-        Transaction transaction = null;
+        org.hibernate.Transaction hibernateTransaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            transaction = session.beginTransaction();
+            hibernateTransaction = session.beginTransaction();
             User updatedUser = session.merge(user);
-            session.flush(); // Ensures data is sent to the DB
-            transaction.commit();
+            session.flush();
+            hibernateTransaction.commit();
             logger.info("SUCCESS: User with ID {} updated.", updatedUser.getId());
             return updatedUser;
         } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
+            if (hibernateTransaction != null) hibernateTransaction.rollback();
             logger.error("CRITICAL ERROR in update method for user ID {}", user.getId(), e);
             throw new RuntimeException("Could not update user", e);
         }
@@ -104,6 +111,79 @@ public class UserRepositoryImpl implements UserRepository {
         } catch (Exception e) {
             logger.error("CRITICAL ERROR in findAll users", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public void processWalletPayment(Long userId, Integer amount, Long orderId) {
+        org.hibernate.Transaction hibernateTransaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            hibernateTransaction = session.beginTransaction();
+
+            User user = session.find(User.class, userId, LockModeType.PESSIMISTIC_WRITE);
+            if (user == null) {
+                throw new IllegalStateException("User not found.");
+            }
+
+            if (user.getWalletBalance() < amount) {
+                throw new IllegalStateException("Insufficient wallet balance.");
+            }
+
+            user.setWalletBalance(user.getWalletBalance() - amount);
+            session.merge(user);
+
+            // Here, we create an instance of *our* Transaction model
+            org.example.model.Transaction paymentTransaction = new org.example.model.Transaction();
+            paymentTransaction.setUser(user);
+            paymentTransaction.setAmount(-amount);
+            paymentTransaction.setType(TransactionType.PAYMENT);
+            paymentTransaction.setCreatedAt(LocalDateTime.now());
+
+            Order order = session.get(Order.class, orderId);
+            if(order != null) {
+                paymentTransaction.setOrder(order);
+            }
+
+            session.persist(paymentTransaction);
+            hibernateTransaction.commit();
+        } catch (Exception e) {
+            if (hibernateTransaction != null) {
+                hibernateTransaction.rollback();
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public void processWalletDeposit(Long userId, Integer amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Deposit amount must be positive.");
+        }
+        org.hibernate.Transaction hibernateTransaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            hibernateTransaction = session.beginTransaction();
+
+            User user = session.find(User.class, userId, LockModeType.PESSIMISTIC_WRITE);
+            if (user == null) {
+                throw new IllegalStateException("User not found.");
+            }
+
+            user.setWalletBalance(user.getWalletBalance() + amount);
+            session.merge(user);
+
+            org.example.model.Transaction depositTransaction = new org.example.model.Transaction();
+            depositTransaction.setUser(user);
+            depositTransaction.setAmount(amount);
+            depositTransaction.setType(TransactionType.DEPOSIT);
+            depositTransaction.setCreatedAt(LocalDateTime.now());
+            session.persist(depositTransaction);
+
+            hibernateTransaction.commit();
+        } catch (Exception e) {
+            if (hibernateTransaction != null) {
+                hibernateTransaction.rollback();
+            }
+            throw new RuntimeException("Failed to process wallet deposit.", e);
         }
     }
 }

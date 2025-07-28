@@ -43,31 +43,23 @@ public class SubmitOrderAction implements Route {
         Long customerId = request.attribute("userId");
         SubmitOrderRequest orderRequest = gson.fromJson(request.body(), SubmitOrderRequest.class);
 
-        // ۱. اعتبارسنجی ورودی
         if (orderRequest.getVendorId() == null || orderRequest.getDeliveryAddress() == null || orderRequest.getItems() == null || orderRequest.getItems().isEmpty()) {
             throw new InvalidInputException("Missing required fields: vendor_id, delivery_address, and items are required.");
         }
 
-        // ۲. پیدا کردن موجودیت‌های لازم
         User customer = userRepository.findById(customerId).orElseThrow(() -> new NotFoundException("Customer not found."));
         Restaurant restaurant = restaurantRepository.findById(orderRequest.getVendorId()).orElseThrow(() -> new NotFoundException("Vendor not found."));
 
         BigDecimal rawPrice = BigDecimal.ZERO;
         List<FoodItem> foodItemsForOrder = new ArrayList<>();
 
-        // ۳. بررسی موجودی و محاسبه قیمت اولیه
         for (var itemRequest : orderRequest.getItems()) {
             FoodItem foodItem = foodItemRepository.findById(itemRequest.getItemId())
                     .orElseThrow(() -> new NotFoundException("Food item with ID " + itemRequest.getItemId() + " not found."));
             if (foodItem.getSupply() < itemRequest.getQuantity()) {
                 throw new ResourceConflictException("Not enough supply for item: " + foodItem.getName());
             }
-            // کاهش موجودی فقط در حافظه (در memory) انجام می‌شود
             foodItem.setSupply(foodItem.getSupply() - itemRequest.getQuantity());
-
-            // ===> این خط حذف می‌شود تا از Cascade استفاده کنیم <===
-            // foodItemRepository.update(foodItem);
-
             rawPrice = rawPrice.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
             foodItemsForOrder.add(foodItem);
         }
@@ -75,12 +67,10 @@ public class SubmitOrderAction implements Route {
         BigDecimal finalPrice = new BigDecimal(rawPrice.toString());
         Coupon appliedCoupon = null;
 
-        // ۴. منطق اعمال کوپن تخفیف
         if (orderRequest.getCouponId() != null) {
             appliedCoupon = couponRepository.findById(orderRequest.getCouponId())
                     .orElseThrow(() -> new NotFoundException("Coupon not found."));
 
-            // اعتبارسنجی و اعمال تخفیف کوپن
             if (appliedCoupon.getMinPrice() != null && finalPrice.intValue() < appliedCoupon.getMinPrice()) {
                 throw new InvalidInputException("Order total is less than the coupon's minimum price.");
             }
@@ -100,23 +90,19 @@ public class SubmitOrderAction implements Route {
 
             if (appliedCoupon.getUserCount() != null) {
                 appliedCoupon.setUserCount(appliedCoupon.getUserCount() - 1);
-                couponRepository.update(appliedCoupon);
+                // The update will be cascaded through the order save
             }
         }
 
-        // ۵. اضافه کردن هزینه‌های رستوران
         Integer taxFee = restaurant.getTaxFee() != null ? restaurant.getTaxFee() : 0;
         Integer additionalFee = restaurant.getAdditionalFee() != null ? restaurant.getAdditionalFee() : 0;
         finalPrice = finalPrice.add(BigDecimal.valueOf(taxFee));
         finalPrice = finalPrice.add(BigDecimal.valueOf(additionalFee));
 
-        // TODO: هزینه پیک (courier_fee) باید در آینده محاسبه شود
-
-        // ۶. ساختن و ذخیره سفارش جدید
         Order newOrder = new Order();
         newOrder.setCustomer(customer);
         newOrder.setRestaurant(restaurant);
-        newOrder.setItems(foodItemsForOrder); // <-- لیست آیتم‌های تغییر کرده به سفارش اضافه می‌شود
+        newOrder.setItems(foodItemsForOrder);
         newOrder.setDeliveryAddress(orderRequest.getDeliveryAddress());
         newOrder.setStatus(OrderStatus.SUBMITTED);
         newOrder.setRawPrice(rawPrice.intValue());
@@ -128,11 +114,8 @@ public class SubmitOrderAction implements Route {
             newOrder.setCoupon(appliedCoupon);
         }
 
-        // وقتی این خط اجرا می‌شود، هایبرنیت به صورت خودکار هم سفارش جدید را INSERT می‌کند
-        // و هم تمام آیتم‌های غذایی تغییر کرده را UPDATE می‌کند، همه در یک تراکنش واحد.
         Order savedOrder = orderRepository.save(newOrder);
 
-        // ۷. ارسال پاسخ موفقیت‌آمیز
         response.status(200);
         return gson.toJson(new OrderDTO(savedOrder));
     }

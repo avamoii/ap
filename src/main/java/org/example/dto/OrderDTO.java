@@ -24,11 +24,13 @@ public class OrderDTO {
     private OrderStatus status;
     private String createdAt;
     private String updatedAt;
-
-    // --- فیلد جدید برای شناسه نظر ---
-    @SerializedName("rating_id")
     private Long ratingId;
 
+    // --- فیلدهای جدید برای پنل ادمین ---
+    @SerializedName("customer_name")
+    private String customerName;
+    @SerializedName("restaurant_name")
+    private String restaurantName;
 
     public OrderDTO(Order order) {
         this.id = order.getId();
@@ -52,11 +54,13 @@ public class OrderDTO {
         if (order.getUpdatedAt() != null) {
             this.updatedAt = order.getUpdatedAt().format(DateTimeFormatter.ISO_DATE_TIME);
         }
-        // --- مقداردهی فیلد جدید ---
-        //  (برای این کار باید یک رابطه یک به یک بین Order و Rating ایجاد کنیم)
-        // if (order.getRating() != null) {
-        //     this.ratingId = order.getRating().getId();
-        // }
+        if (order.getRating() != null) {
+            this.ratingId = order.getRating().getId();
+        }
+
+        // --- مقداردهی فیلدهای جدید ---
+        this.customerName = (order.getCustomer().getFirstName() + " " + order.getCustomer().getLastName()).trim();
+        this.restaurantName = order.getRestaurant().getName();
     }
 
     // Getters
@@ -75,7 +79,9 @@ public class OrderDTO {
     public OrderStatus getStatus() { return status; }
     public String getCreatedAt() { return createdAt; }
     public String getUpdatedAt() { return updatedAt; }
-
-    // Getter برای فیلد جدید
     public Long getRatingId() { return ratingId; }
+
+    // --- Getters برای فیلدهای جدید ---
+    public String getCustomerName() { return customerName; }
+    public String getRestaurantName() { return restaurantName; }
 }

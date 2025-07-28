@@ -2,24 +2,21 @@ package org.example.actions.wallet;
 
 import com.google.gson.Gson;
 import org.example.dto.TopUpWalletRequest;
-import org.example.enums.TransactionType;
 import org.example.exception.InvalidInputException;
-import org.example.exception.NotFoundException;
-import org.example.model.Transaction;
-import org.example.model.User;
-import org.example.repository.TransactionRepository;
 import org.example.repository.UserRepository;
 import spark.Request;
+import org.example.repository.TransactionRepository;
 import spark.Response;
 import spark.Route;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 public class TopUpWalletAction implements Route {
 
     private final Gson gson;
     private final UserRepository userRepository;
+    // TransactionRepository is no longer needed here as the logic is moved to UserRepository
+    // but we keep it in the constructor for dependency injection consistency.
     private final TransactionRepository transactionRepository;
 
     public TopUpWalletAction(Gson gson, UserRepository userRepository, TransactionRepository transactionRepository) {
@@ -34,29 +31,25 @@ public class TopUpWalletAction implements Route {
         Long userId = request.attribute("userId");
         TopUpWalletRequest topUpRequest = gson.fromJson(request.body(), TopUpWalletRequest.class);
 
-        // ۱. اعتبارسنجی ورودی (برای خطای 400)
+        // 1. Validate the input amount
         if (topUpRequest.getAmount() == null || topUpRequest.getAmount() <= 0) {
             throw new InvalidInputException("Invalid amount. Amount must be a positive number.");
         }
 
-        // ۲. پیدا کردن کاربر
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found."));
+        try {
+            // --- **THE MAIN FIX IS HERE** ---
+            // 2. Call the new, safe method that handles everything in one transaction.
+            // This single line replaces the separate steps of finding, updating, and saving.
+            userRepository.processWalletDeposit(userId, topUpRequest.getAmount());
 
-        // ۳. افزایش موجودی کیف پول
-        user.setWalletBalance(user.getWalletBalance() + topUpRequest.getAmount());
-        userRepository.update(user);
+            // 3. Return a success response
+            response.status(200);
+            return gson.toJson(Map.of("message", "Wallet topped up successfully"));
 
-        // ۴. ثبت تراکنش واریز
-        Transaction depositTransaction = new Transaction();
-        depositTransaction.setUser(user);
-        depositTransaction.setType(TransactionType.DEPOSIT);
-        depositTransaction.setAmount(topUpRequest.getAmount());
-        depositTransaction.setCreatedAt(LocalDateTime.now());
-        transactionRepository.save(depositTransaction);
-
-        // ۵. ارسال پاسخ موفقیت‌آمیز
-        response.status(200);
-        return gson.toJson(Map.of("message", "Wallet topped up successfully"));
+        } catch (Exception e) {
+            // 4. If anything goes wrong inside the transaction, catch the error and respond
+            response.status(500);
+            return gson.toJson(Map.of("error", e.getMessage()));
+        }
     }
 }
