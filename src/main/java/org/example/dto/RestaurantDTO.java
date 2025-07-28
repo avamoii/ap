@@ -4,13 +4,13 @@ import org.example.model.Restaurant;
 
 // This DTO is used to send restaurant data back to the client.
 public class RestaurantDTO {
-    private Long id;
-    private String name;
-    private String address;
-    private String phone;
-    private String logoBase64;
-    private Integer taxFee;
-    private Integer additionalFee;
+    private final Long id;
+    private final String name;
+    private final String address;
+    private final String phone;
+    private final String logoBase64;
+    private final Integer taxFee;
+    private final Integer additionalFee;
 
     // Constructor to easily convert an Entity to a DTO
     public RestaurantDTO(Restaurant restaurant) {

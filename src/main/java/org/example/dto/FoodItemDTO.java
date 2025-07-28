@@ -4,13 +4,13 @@ import org.example.model.FoodItem;
 import java.util.List;
 
 public class FoodItemDTO {
-    private Long id;
-    private String name;
-    private String description;
-    private Integer price;
-    private Integer supply;
-    private String imageBase64;
-    private List<String> keywords;
+    private final Long id;
+    private final String name;
+    private final String description;
+    private final Integer price;
+    private final Integer supply;
+    private final String imageBase64;
+    private final List<String> keywords;
     private Long restaurantId;
 
     public FoodItemDTO(FoodItem foodItem) {

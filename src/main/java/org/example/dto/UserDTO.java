@@ -6,18 +6,18 @@ import org.example.enums.UserStatus; // ایمپورت جدید
 import org.example.model.User;
 
 public class UserDTO {
-    private Long id;
-    private String fullName;
-    private String phoneNumber;
-    private UserRole role;
-    private String address;
-    private String email;
+    private final Long id;
+    private final String fullName;
+    private final String phoneNumber;
+    private final UserRole role;
+    private final String address;
+    private final String email;
     private BankInfoDTO bankInfo;
     @SerializedName("wallet_balance")
     private Integer walletBalance;
 
     // --- فیلد جدید برای وضعیت کاربر ---
-    private UserStatus status;
+    private final UserStatus status;
 
     public UserDTO(User user) {
         this.id = user.getId();

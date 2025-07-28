@@ -6,12 +6,12 @@ import org.example.model.Transaction;
 import java.time.format.DateTimeFormatter;
 
 public class TransactionDTO {
-    private Long id;
-    private Long userId;
+    private final Long id;
+    private final Long userId;
     private Long orderId;
-    private TransactionType type;
-    private Integer amount;
-    private String createdAt;
+    private final TransactionType type;
+    private final Integer amount;
+    private final String createdAt;
 
     // --- فیلد جدید برای نمایش نام کاربر در پنل ادمین ---
     @SerializedName("user_name")

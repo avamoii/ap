@@ -9,20 +9,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class OrderDTO {
-    private Long id;
-    private String deliveryAddress;
-    private Long customerId;
-    private Long restaurantId;
+    private final Long id;
+    private final String deliveryAddress;
+    private final Long customerId;
+    private final Long restaurantId;
     private Long courierId;
     private Long couponId;
-    private List<Long> itemIds;
-    private Integer rawPrice;
-    private Integer taxFee;
-    private Integer additionalFee;
-    private Integer courierFee;
-    private Integer payPrice;
-    private OrderStatus status;
-    private String createdAt;
+    private final List<Long> itemIds;
+    private final Integer rawPrice;
+    private final Integer taxFee;
+    private final Integer additionalFee;
+    private final Integer courierFee;
+    private final Integer payPrice;
+    private final OrderStatus status;
+    private final String createdAt;
     private String updatedAt;
     private Long ratingId;
 

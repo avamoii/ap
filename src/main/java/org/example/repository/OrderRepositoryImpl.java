@@ -23,7 +23,8 @@ public class OrderRepositoryImpl implements OrderRepository {
     public List<Order> findByRestaurantIdWithFilters(Long restaurantId, Map<String, String[]> filters) {
         logger.debug("Finding orders for restaurant ID: {} with filters", restaurantId);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            StringBuilder hql = new StringBuilder("SELECT DISTINCT o FROM Order o JOIN o.customer c LEFT JOIN FETCH o.rating WHERE o.restaurant.id = :restaurantId");
+            // --- CHANGE IS HERE: Added JOIN FETCH for restaurant and customer ---
+            StringBuilder hql = new StringBuilder("SELECT DISTINCT o FROM Order o JOIN FETCH o.customer c JOIN FETCH o.restaurant r LEFT JOIN FETCH o.rating WHERE r.id = :restaurantId");
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("restaurantId", restaurantId);
 
@@ -49,6 +50,7 @@ public class OrderRepositoryImpl implements OrderRepository {
             parameters.forEach(query::setParameter);
 
             List<Order> orders = query.list();
+            // --- CHANGE IS HERE: Eagerly fetch items for each order ---
             for (Order order : orders) {
                 Hibernate.initialize(order.getItems());
             }
