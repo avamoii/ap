@@ -113,6 +113,7 @@ public class Main {
         patch("/restaurants/orders/:order_id", new UpdateOrderStatusAction(gson, orderRepository));
 
         // --- Buyer Endpoints ---
+        get("/vendors", new ListVendorsAction(gson, restaurantRepository));
         post("/vendors", new ListVendorsAction(gson, restaurantRepository));
         get("/vendors/:id", new GetVendorMenuAction(gson, restaurantRepository));
         post("/items", new ListItemsAction(gson, foodItemRepository));

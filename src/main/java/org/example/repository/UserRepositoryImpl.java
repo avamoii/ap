@@ -69,7 +69,6 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public User save(User user) {
         logger.debug("Attempting to save user with phone: '{}'", user.getPhoneNumber());
-        // --- **FIX: Using the fully qualified name for Hibernate's Transaction** ---
         org.hibernate.Transaction hibernateTransaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             hibernateTransaction = session.beginTransaction();
@@ -125,14 +124,17 @@ public class UserRepositoryImpl implements UserRepository {
                 throw new IllegalStateException("User not found.");
             }
 
+            // --- **این لاگ بسیار مهم است** ---
+            logger.info("Checking wallet payment. User Balance: [{}], Order Price: [{}]", user.getWalletBalance(), amount);
+
             if (user.getWalletBalance() < amount) {
+                logger.warn("Payment failed for user ID {}: Insufficient funds. Wallet has {}, but order requires {}.", userId, user.getWalletBalance(), amount);
                 throw new IllegalStateException("Insufficient wallet balance.");
             }
 
             user.setWalletBalance(user.getWalletBalance() - amount);
             session.merge(user);
 
-            // Here, we create an instance of *our* Transaction model
             org.example.model.Transaction paymentTransaction = new org.example.model.Transaction();
             paymentTransaction.setUser(user);
             paymentTransaction.setAmount(-amount);
