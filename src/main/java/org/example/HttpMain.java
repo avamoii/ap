@@ -9,6 +9,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.example.config.HibernateUtil;
 import org.example.controller.auth.*;
 import org.example.controller.TestController;
+import org.example.controller.restaurant.*;
 import org.example.core.Router;
 import org.example.core.ServerHandler;
 import org.example.middleware.AuthMiddleware;
@@ -87,6 +88,8 @@ public class HttpMain {
         router.get("/test", new TestController(gson, userRepository));
 
         setupAuthRoutes(router, gson, userRepository);
+        setupRestaurantRoutes(router, gson, userRepository, restaurantRepository,
+                foodItemRepository, menuRepository, orderRepository);
     }
 
     // Add this to your Main.java setupRoutes method:
@@ -97,5 +100,29 @@ public class HttpMain {
         router.get("/auth/profile", new GetUserProfileController(gson, userRepository));
         router.put("/auth/profile", new UpdateUserProfileController(gson, userRepository));
         router.post("/auth/logout", new LogoutUserController(gson));
+    }
+
+    private static void setupRestaurantRoutes(Router router, Gson gson,
+                                              UserRepository userRepository,
+                                              RestaurantRepository restaurantRepository,
+                                              FoodItemRepository foodItemRepository,
+                                              MenuRepository menuRepository,
+                                              OrderRepository orderRepository) {
+
+        // Restaurant routes
+        router.post("/restaurants", new CreateRestaurantController(gson, userRepository, restaurantRepository));
+        router.get("/restaurants/mine", new GetMyRestaurantsController(gson, restaurantRepository));
+        router.put("/restaurants/:id", new UpdateRestaurantController(gson, restaurantRepository));
+
+        // Menu and food item routes
+        router.post("/restaurants/:id/menu/:title/item", new AddFoodItemController(gson, restaurantRepository, foodItemRepository, menuRepository));
+        router.put("/restaurants/:id/item/:item_id", new UpdateFoodItemController(gson, foodItemRepository));
+        router.delete("/restaurants/:id/item/:item_id", new DeleteFoodItemController(gson, foodItemRepository));
+        router.post("/restaurants/:id/menu", new CreateMenuController(gson, restaurantRepository, menuRepository));
+        router.delete("/restaurants/:id/menu/:title/:item_id", new RemoveFoodItemFromMenuController(gson, menuRepository));
+
+        // Order management routes
+        router.get("/restaurants/:id/orders", new GetRestaurantOrdersController(gson, restaurantRepository, orderRepository));
+        router.patch("/restaurants/orders/:order_id", new UpdateOrderStatusController(gson, orderRepository));
     }
 }
