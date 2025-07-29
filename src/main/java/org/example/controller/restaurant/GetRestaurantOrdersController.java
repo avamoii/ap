@@ -1,4 +1,3 @@
-// 9. GET RESTAURANT ORDERS CONTROLLER
 package org.example.controller.restaurant;
 
 import com.google.gson.Gson;
@@ -13,7 +12,9 @@ import org.example.model.Restaurant;
 import org.example.repository.OrderRepository;
 import org.example.repository.RestaurantRepository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class GetRestaurantOrdersController extends BaseController {
@@ -39,8 +40,9 @@ public class GetRestaurantOrdersController extends BaseController {
             throw new ForbiddenException("Access denied. You are not the owner of this restaurant.");
         }
 
-        // Get orders with filters (convert query params to map)
-        List<Order> orders = orderRepository.findByRestaurantIdWithFilters(restaurantId, request.getQueryParams());
+        // Get orders with filters
+        List<Order> orders = orderRepository.findByRestaurantIdWithFilters(restaurantId,
+                convertToStringArrayMap(request.getQueryParams()));
 
         // Convert to DTOs
         List<OrderDTO> orderDTOS = orders.stream()
@@ -50,5 +52,13 @@ public class GetRestaurantOrdersController extends BaseController {
         // Send response
         response.status(200);
         sendJson(response, orderDTOS);
+    }
+
+    private Map<String, String[]> convertToStringArrayMap(Map<String, String> stringMap) {
+        Map<String, String[]> arrayMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : stringMap.entrySet()) {
+            arrayMap.put(entry.getKey(), new String[]{entry.getValue()});
+        }
+        return arrayMap;
     }
 }
