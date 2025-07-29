@@ -21,12 +21,14 @@ import java.util.logging.LogManager;
 public class HttpMain {
     public static void main(String[] args) throws IOException {
         // Server Configuration
-        int port = 1217;
         LogManager.getLogManager().reset();
 
         // Load environment variables
         Dotenv dotenv = Dotenv.load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+
+        // read port from env file
+        int port = Integer.parseInt(System.getProperty("SERVER_PORT", "8080"));
 
         // Initialize Hibernate
         try {
