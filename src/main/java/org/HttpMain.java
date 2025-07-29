@@ -8,6 +8,7 @@ import com.sun.net.httpserver.HttpServer;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.example.config.HibernateUtil;
 import org.example.controller.auth.GetUserProfileController;
+import org.example.controller.TestController;
 import org.example.core.Router;
 import org.example.core.ServerHandler;
 import org.example.middleware.AuthMiddleware;
@@ -83,6 +84,7 @@ public class HttpMain {
                                     TransactionRepository transactionRepository) {
 
         // Auth routes
+        router.get("/test", new TestController(gson, userRepository));
         router.get("/auth/profile", new GetUserProfileController(gson, userRepository));
 
         // Add all other routes here following the same pattern...
