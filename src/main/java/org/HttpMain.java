@@ -7,7 +7,7 @@ import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpServer;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.example.config.HibernateUtil;
-import org.example.controller.auth.GetUserProfileController;
+import org.example.controller.auth.*;
 import org.example.controller.TestController;
 import org.example.core.Router;
 import org.example.core.ServerHandler;
@@ -85,11 +85,17 @@ public class HttpMain {
 
         // Auth routes
         router.get("/test", new TestController(gson, userRepository));
-        router.get("/auth/profile", new GetUserProfileController(gson, userRepository));
 
-        // Add all other routes here following the same pattern...
-        // router.post("/auth/register", new RegisterUserController(gson, userRepository));
-        // router.post("/auth/login", new LoginUserController(gson, userRepository));
-        // etc.
+        setupAuthRoutes(router, gson, userRepository);
+    }
+
+    // Add this to your Main.java setupRoutes method:
+    private static void setupAuthRoutes(Router router, Gson gson, UserRepository userRepository) {
+        // Auth routes
+        router.post("/auth/register", new RegisterUserController(gson, userRepository));
+        router.post("/auth/login", new LoginUserController(gson, userRepository));
+        router.get("/auth/profile", new GetUserProfileController(gson, userRepository));
+        router.put("/auth/profile", new UpdateUserProfileController(gson, userRepository));
+        router.post("/auth/logout", new LogoutUserController(gson));
     }
 }
