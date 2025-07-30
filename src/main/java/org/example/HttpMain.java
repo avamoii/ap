@@ -9,6 +9,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.example.config.HibernateUtil;
 import org.example.controller.auth.*;
 import org.example.controller.TestController;
+import org.example.controller.buyer.*;
 import org.example.controller.restaurant.*;
 import org.example.core.Router;
 import org.example.core.ServerHandler;
@@ -90,9 +91,9 @@ public class HttpMain {
         setupAuthRoutes(router, gson, userRepository);
         setupRestaurantRoutes(router, gson, userRepository, restaurantRepository,
                 foodItemRepository, menuRepository, orderRepository);
+        setupBuyerRoutes(router, gson, restaurantRepository, foodItemRepository, couponRepository);
     }
 
-    // Add this to your Main.java setupRoutes method:
     private static void setupAuthRoutes(Router router, Gson gson, UserRepository userRepository) {
         // Auth routes
         router.post("/auth/register", new RegisterUserController(gson, userRepository));
@@ -124,5 +125,18 @@ public class HttpMain {
         // Order management routes
         router.get("/restaurants/:id/orders", new GetRestaurantOrdersController(gson, restaurantRepository, orderRepository));
         router.patch("/restaurants/orders/:order_id", new UpdateOrderStatusController(gson, orderRepository));
+    }
+
+    private static void setupBuyerRoutes(Router router, Gson gson,
+                                         RestaurantRepository restaurantRepository,
+                                         FoodItemRepository foodItemRepository,
+                                         CouponRepository couponRepository) {
+
+        // Buyer routes
+        router.post("/vendors", new ListVendorsController(gson, restaurantRepository));
+        router.get("/vendors/:id", new GetVendorMenuController(gson, restaurantRepository));
+        router.post("/items", new ListItemsController(gson, foodItemRepository));
+        router.get("/items/:id", new GetItemDetailsController(gson, foodItemRepository));
+        router.get("/coupons", new CheckCouponController(gson, couponRepository));
     }
 }
