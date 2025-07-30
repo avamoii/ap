@@ -92,7 +92,7 @@ public class HttpMain {
         setupRestaurantRoutes(router, gson, userRepository, restaurantRepository,
                 foodItemRepository, menuRepository, orderRepository);
         setupBuyerRoutes(router, gson, userRepository, restaurantRepository,
-                foodItemRepository, couponRepository, orderRepository);
+                foodItemRepository, couponRepository, orderRepository, ratingRepository);
     }
 
     private static void setupAuthRoutes(Router router, Gson gson, UserRepository userRepository) {
@@ -133,7 +133,8 @@ public class HttpMain {
                                          RestaurantRepository restaurantRepository,
                                          FoodItemRepository foodItemRepository,
                                          CouponRepository couponRepository,
-                                         OrderRepository orderRepository) {
+                                         OrderRepository orderRepository,
+                                         RatingRepository ratingRepository) {
 
         // Vendor/Restaurant browsing
         router.post("/vendors", new ListVendorsController(gson, restaurantRepository));
@@ -156,5 +157,12 @@ public class HttpMain {
                 foodItemRepository, orderRepository, couponRepository));
         router.get("/orders/history", new GetOrderHistoryController(gson, orderRepository));
         router.get("/orders/:id", new GetOrderDetailsController(gson, orderRepository));
+
+        // Rating management
+        router.post("/ratings", new SubmitRatingController(gson, orderRepository, ratingRepository));
+        router.get("/ratings/items/:item_id", new GetItemRatingsController(gson, ratingRepository));
+        router.get("/ratings/:id", new GetRatingDetailsController(gson, ratingRepository));
+        router.put("/ratings/:id", new UpdateRatingController(gson, ratingRepository));
+        router.delete("/ratings/:id", new DeleteRatingController(gson, ratingRepository));
     }
 }
