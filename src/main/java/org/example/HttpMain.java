@@ -91,7 +91,8 @@ public class HttpMain {
         setupAuthRoutes(router, gson, userRepository);
         setupRestaurantRoutes(router, gson, userRepository, restaurantRepository,
                 foodItemRepository, menuRepository, orderRepository);
-        setupBuyerRoutes(router, gson, restaurantRepository, foodItemRepository, couponRepository);
+        setupBuyerRoutes(router, gson, userRepository, restaurantRepository,
+                foodItemRepository, couponRepository, orderRepository);
     }
 
     private static void setupAuthRoutes(Router router, Gson gson, UserRepository userRepository) {
@@ -128,15 +129,32 @@ public class HttpMain {
     }
 
     private static void setupBuyerRoutes(Router router, Gson gson,
+                                         UserRepository userRepository,
                                          RestaurantRepository restaurantRepository,
                                          FoodItemRepository foodItemRepository,
-                                         CouponRepository couponRepository) {
+                                         CouponRepository couponRepository,
+                                         OrderRepository orderRepository) {
 
-        // Buyer routes
+        // Vendor/Restaurant browsing
         router.post("/vendors", new ListVendorsController(gson, restaurantRepository));
         router.get("/vendors/:id", new GetVendorMenuController(gson, restaurantRepository));
+
+        // Item browsing
         router.post("/items", new ListItemsController(gson, foodItemRepository));
         router.get("/items/:id", new GetItemDetailsController(gson, foodItemRepository));
+
+        // Coupon checking
         router.get("/coupons", new CheckCouponController(gson, couponRepository));
+
+        // Favorites management
+        router.get("/favorites", new GetFavoritesController(gson, userRepository));
+        router.put("/favorites/:restaurantId", new AddFavoriteRestaurantController(gson, userRepository, restaurantRepository));
+        router.delete("/favorites/:restaurantId", new RemoveFavoriteRestaurantController(gson, userRepository));
+
+        // Order management
+        router.post("/orders", new SubmitOrderController(gson, userRepository, restaurantRepository,
+                foodItemRepository, orderRepository, couponRepository));
+        router.get("/orders/history", new GetOrderHistoryController(gson, orderRepository));
+        router.get("/orders/:id", new GetOrderDetailsController(gson, orderRepository));
     }
 }

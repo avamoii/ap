@@ -1,0 +1,135 @@
+// 1. SUBMIT ORDER CONTROLLER
+package org.example.controller.buyer;
+
+import com.google.gson.Gson;
+import org.example.controller.BaseController;
+import org.example.core.HttpRequest;
+import org.example.core.HttpResponse;
+import org.example.dto.OrderDTO;
+import org.example.dto.SubmitOrderRequest;
+import org.example.enums.CouponType;
+import org.example.enums.OrderStatus;
+import org.example.exception.InvalidInputException;
+import org.example.exception.NotFoundException;
+import org.example.exception.ResourceConflictException;
+import org.example.model.*;
+import org.example.repository.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+public class SubmitOrderController extends BaseController {
+    private final UserRepository userRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final FoodItemRepository foodItemRepository;
+    private final OrderRepository orderRepository;
+    private final CouponRepository couponRepository;
+
+    public SubmitOrderController(Gson gson, UserRepository userRepository, RestaurantRepository restaurantRepository,
+                                 FoodItemRepository foodItemRepository, OrderRepository orderRepository,
+                                 CouponRepository couponRepository) {
+        super(gson);
+        this.userRepository = userRepository;
+        this.restaurantRepository = restaurantRepository;
+        this.foodItemRepository = foodItemRepository;
+        this.orderRepository = orderRepository;
+        this.couponRepository = couponRepository;
+    }
+
+    @Override
+    public void handle(HttpRequest request, HttpResponse response) throws Exception {
+        Long customerId = getCurrentUserId();
+        SubmitOrderRequest orderRequest = gson.fromJson(request.getBody(), SubmitOrderRequest.class);
+
+        // Validate required fields
+        if (orderRequest.getVendorId() == null || orderRequest.getDeliveryAddress() == null ||
+                orderRequest.getItems() == null || orderRequest.getItems().isEmpty()) {
+            throw new InvalidInputException("Missing required fields: vendor_id, delivery_address, and items are required.");
+        }
+
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new NotFoundException("Customer not found."));
+        Restaurant restaurant = restaurantRepository.findById(orderRequest.getVendorId())
+                .orElseThrow(() -> new NotFoundException("Vendor not found."));
+
+        BigDecimal rawPrice = BigDecimal.ZERO;
+        List<FoodItem> foodItemsForOrder = new ArrayList<>();
+
+        // Process order items
+        for (var itemRequest : orderRequest.getItems()) {
+            FoodItem foodItem = foodItemRepository.findById(itemRequest.getItemId())
+                    .orElseThrow(() -> new NotFoundException("Food item with ID " + itemRequest.getItemId() + " not found."));
+
+            if (foodItem.getSupply() < itemRequest.getQuantity()) {
+                throw new ResourceConflictException("Not enough supply for item: " + foodItem.getName());
+            }
+
+            foodItem.setSupply(foodItem.getSupply() - itemRequest.getQuantity());
+            rawPrice = rawPrice.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
+            foodItemsForOrder.add(foodItem);
+        }
+
+        BigDecimal finalPrice = new BigDecimal(rawPrice.toString());
+        Coupon appliedCoupon = null;
+
+        // Process coupon if provided
+        if (orderRequest.getCouponId() != null) {
+            appliedCoupon = couponRepository.findById(orderRequest.getCouponId())
+                    .orElseThrow(() -> new NotFoundException("Coupon not found."));
+
+            // Validate coupon
+            if (appliedCoupon.getMinPrice() != null && finalPrice.intValue() < appliedCoupon.getMinPrice()) {
+                throw new InvalidInputException("Order total is less than the coupon's minimum price.");
+            }
+            if (appliedCoupon.getEndDate() != null && LocalDate.now().isAfter(appliedCoupon.getEndDate())) {
+                throw new InvalidInputException("Coupon has expired.");
+            }
+            if (appliedCoupon.getUserCount() != null && appliedCoupon.getUserCount() <= 0) {
+                throw new InvalidInputException("Coupon usage limit has been reached.");
+            }
+
+            // Apply coupon discount
+            if (appliedCoupon.getType() == CouponType.FIXED) {
+                finalPrice = finalPrice.subtract(appliedCoupon.getValue());
+            } else if (appliedCoupon.getType() == CouponType.PERCENT) {
+                BigDecimal discountAmount = finalPrice.multiply(appliedCoupon.getValue()).divide(new BigDecimal(100));
+                finalPrice = finalPrice.subtract(discountAmount);
+            }
+
+            // Update coupon usage count
+            if (appliedCoupon.getUserCount() != null) {
+                appliedCoupon.setUserCount(appliedCoupon.getUserCount() - 1);
+            }
+        }
+
+        // Add restaurant fees
+        Integer taxFee = restaurant.getTaxFee() != null ? restaurant.getTaxFee() : 0;
+        Integer additionalFee = restaurant.getAdditionalFee() != null ? restaurant.getAdditionalFee() : 0;
+        finalPrice = finalPrice.add(BigDecimal.valueOf(taxFee));
+        finalPrice = finalPrice.add(BigDecimal.valueOf(additionalFee));
+
+        // Create and save order
+        Order newOrder = new Order();
+        newOrder.setCustomer(customer);
+        newOrder.setRestaurant(restaurant);
+        newOrder.setItems(foodItemsForOrder);
+        newOrder.setDeliveryAddress(orderRequest.getDeliveryAddress());
+        newOrder.setStatus(OrderStatus.SUBMITTED);
+        newOrder.setRawPrice(rawPrice.intValue());
+        newOrder.setTaxFee(taxFee);
+        newOrder.setAdditionalFee(additionalFee);
+        newOrder.setPayPrice(finalPrice.intValue() > 0 ? finalPrice.intValue() : 0);
+        newOrder.setCreatedAt(LocalDateTime.now());
+        if (appliedCoupon != null) {
+            newOrder.setCoupon(appliedCoupon);
+        }
+
+        Order savedOrder = orderRepository.save(newOrder);
+
+        response.status(200);
+        sendJson(response, new OrderDTO(savedOrder));
+    }
+}
