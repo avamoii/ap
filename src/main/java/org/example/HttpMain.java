@@ -10,7 +10,10 @@ import org.example.config.HibernateUtil;
 import org.example.controller.auth.*;
 import org.example.controller.TestController;
 import org.example.controller.buyer.*;
+import org.example.controller.payment.MakePaymentController;
 import org.example.controller.restaurant.*;
+import org.example.controller.transaction.GetTransactionHistoryController;
+import org.example.controller.wallet.TopUpWalletController;
 import org.example.core.Router;
 import org.example.core.ServerHandler;
 import org.example.middleware.AuthMiddleware;
@@ -93,6 +96,7 @@ public class HttpMain {
                 foodItemRepository, menuRepository, orderRepository);
         setupBuyerRoutes(router, gson, userRepository, restaurantRepository,
                 foodItemRepository, couponRepository, orderRepository, ratingRepository);
+        setupPaymentRoutes(router, gson, userRepository, orderRepository, transactionRepository);
     }
 
     private static void setupAuthRoutes(Router router, Gson gson, UserRepository userRepository) {
@@ -164,5 +168,20 @@ public class HttpMain {
         router.get("/ratings/:id", new GetRatingDetailsController(gson, ratingRepository));
         router.put("/ratings/:id", new UpdateRatingController(gson, ratingRepository));
         router.delete("/ratings/:id", new DeleteRatingController(gson, ratingRepository));
+    }
+
+    private static void setupPaymentRoutes(Router router, Gson gson,
+                                           UserRepository userRepository,
+                                           OrderRepository orderRepository,
+                                           TransactionRepository transactionRepository) {
+
+        // Transaction routes
+        router.get("/transactions", new GetTransactionHistoryController(gson, transactionRepository));
+
+        // Wallet routes
+        router.post("/wallet/top-up", new TopUpWalletController(gson, userRepository, transactionRepository));
+
+        // Payment routes
+        router.post("/payment/online", new MakePaymentController(gson, orderRepository, userRepository, transactionRepository));
     }
 }
