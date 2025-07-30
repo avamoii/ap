@@ -7,6 +7,7 @@ import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpServer;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.example.config.HibernateUtil;
+import org.example.controller.admin.*;
 import org.example.controller.auth.*;
 import org.example.controller.TestController;
 import org.example.controller.buyer.*;
@@ -97,6 +98,7 @@ public class HttpMain {
         setupBuyerRoutes(router, gson, userRepository, restaurantRepository,
                 foodItemRepository, couponRepository, orderRepository, ratingRepository);
         setupPaymentRoutes(router, gson, userRepository, orderRepository, transactionRepository);
+        setupAdminRoutes(router, gson, userRepository, orderRepository, transactionRepository, couponRepository);
     }
 
     private static void setupAuthRoutes(Router router, Gson gson, UserRepository userRepository) {
@@ -183,5 +185,29 @@ public class HttpMain {
 
         // Payment routes
         router.post("/payment/online", new MakePaymentController(gson, orderRepository, userRepository, transactionRepository));
+    }
+
+    private static void setupAdminRoutes(Router router, Gson gson,
+                                         UserRepository userRepository,
+                                         OrderRepository orderRepository,
+                                         TransactionRepository transactionRepository,
+                                         CouponRepository couponRepository) {
+
+        // User management routes
+        router.get("/admin/users", new ListUsersAdminController(gson, userRepository));
+        router.patch("/admin/users/:id/status", new UpdateUserStatusController(gson, userRepository));
+
+        // Order management routes
+        router.get("/admin/orders", new ListOrdersAdminController(gson, orderRepository));
+
+        // Transaction management routes
+        router.get("/admin/transactions", new ListTransactionsAdminController(gson, transactionRepository));
+
+        // Coupon management routes
+        router.get("/admin/coupons", new ListCouponsAdminController(gson, couponRepository));
+        router.post("/admin/coupons", new CreateCouponController(gson, couponRepository));
+        router.delete("/admin/coupons/:id", new DeleteCouponController(gson, couponRepository));
+        router.put("/admin/coupons/:id", new UpdateCouponController(gson, couponRepository));
+        router.get("/admin/coupons/:id", new GetCouponDetailsAdminController(gson, couponRepository));
     }
 }
