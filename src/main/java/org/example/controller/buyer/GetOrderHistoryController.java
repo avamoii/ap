@@ -10,6 +10,7 @@ import org.example.model.Order;
 import org.example.repository.OrderRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class GetOrderHistoryController extends BaseController {
@@ -24,8 +25,19 @@ public class GetOrderHistoryController extends BaseController {
     public void handle(HttpRequest request, HttpResponse response) throws Exception {
         Long customerId = getCurrentUserId();
 
-        // Get the orders with filters from the query parameters
-        List<Order> orders = orderRepository.findByCustomerIdWithFilters(customerId, request.getQueryParams());
+        // Get the original query parameters from the request
+        Map<String, String> queryParams = request.getQueryParams();
+
+        // **FIX:** Convert the Map<String, String> to a Map<String, String[]>
+        // This is done by wrapping each value in a new single-element String array.
+        Map<String, String[]> filters = queryParams.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new String[]{entry.getValue()}
+                ));
+
+        // Get the orders using the correctly typed filters map
+        List<Order> orders = orderRepository.findByCustomerIdWithFilters(customerId, filters);
 
         // Convert the list of entities to a list of DTOs
         List<OrderDTO> orderDTOs = orders.stream()

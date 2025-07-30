@@ -12,6 +12,7 @@ import org.example.model.Transaction;
 import org.example.repository.TransactionRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ListTransactionsAdminController extends BaseController {
@@ -31,15 +32,25 @@ public class ListTransactionsAdminController extends BaseController {
             throw new ForbiddenException("Access denied. Admin role required.");
         }
 
-        // 2. Fetch all transactions from the repository, passing the query parameters as filters.
-        List<Transaction> transactions = transactionRepository.findAllWithFilters(request.getQueryParams());
+        // Get the original query parameters
+        Map<String, String> queryParams = request.getQueryParams();
 
-        // 3. Convert the list of Transaction entities to a list of TransactionDTOs.
+        // **FIX:** Convert the Map<String, String> to a Map<String, String[]>
+        Map<String, String[]> filters = queryParams.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new String[]{entry.getValue()}
+                ));
+
+        // 2. Fetch all transactions using the correctly typed filters map
+        List<Transaction> transactions = transactionRepository.findAllWithFilters(filters);
+
+        // 3. Convert the list of Transaction entities to a list of TransactionDTOs
         List<TransactionDTO> transactionDTOs = transactions.stream()
                 .map(TransactionDTO::new)
                 .collect(Collectors.toList());
 
-        // 4. Send the successful response.
+        // 4. Send the successful response
         response.status(200);
         sendJson(response, transactionDTOs);
     }
